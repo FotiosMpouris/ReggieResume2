@@ -1,3 +1,6 @@
-streamlit
-python-docx
-fpdf
+streamlit==1.10.0
+pandas==1.5.0
+openpyxl==3.0.10
+python-docx==0.8.11
+reportlab==3.6.11
+requests==2.26.0
