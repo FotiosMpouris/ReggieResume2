@@ -1,76 +1,49 @@
-import re
-from docx import Document
-from io import BytesIO
-from fpdf import FPDF
-import logging
+import openai
 
-class ReggieResume:
-    def __init__(self):
-        self.personal_info = {}
-        self.education = []
-        self.experience = []
-        self.skills = {}
+def analyze_resume_and_job(resume, job_description):
+    # Construct the prompt for GPT-4
+    prompt = f"""
+    Analyze the following resume and job description. Then:
+    1. Create a tailored header for the resume.
+    2. Write a custom summary highlighting the candidate's most relevant skills and experiences for this job.
+    3. Create a two-column comparison of the candidate's skills and the job requirements.
 
-    # Function to directly input entire resume as plain text
-    def input_resume(self, resume_text):
-        logging.info("Storing the provided resume.")
-        self.resume_text = resume_text
+    Resume:
+    {resume}
 
-    # Function to extract skills from the resume based on predefined patterns
-    def extract_skills(self):
-        logging.info("Extracting skills from the resume.")
-        # Example: you can define skill patterns to search within the resume text
-        skills_pattern = re.compile(r"\b(skill[s]?|proficienc[yi]?|technolog[yi]?|languages?)\b", re.I)
-        matched_skills = re.findall(skills_pattern, self.resume_text)
-        return list(set(matched_skills))  # Removing duplicates
+    Job Description:
+    {job_description}
 
-    # Function to compare job description with resume skills
-    def compare_skills(self, job_description):
-        logging.info("Comparing skills from job description with resume.")
-        job_skills = re.findall(r"\b(?:skill[s]?|expertise|knowledge)\b.*?:?\s*(.*?)\s*[.,;]", job_description, re.I)
-        resume_skills = self.extract_skills()
+    Provide your analysis in the following format:
+    HEADER:
+    [Tailored header here]
 
-        # Compare and create a dictionary of matched vs unmatched skills
-        matched_skills = [skill for skill in job_skills if skill.lower() in map(str.lower, resume_skills)]
-        unmatched_skills = [skill for skill in job_skills if skill.lower() not in map(str.lower, resume_skills)]
+    SUMMARY:
+    [Custom summary here]
 
-        return matched_skills, unmatched_skills
+    COMPARISON:
+    [Your Skills & Experience]|[Job Requirements]
+    Skill 1|Requirement 1
+    Skill 2|Requirement 2
+    ...
+    """
 
-    # Function to generate a tailored resume based on matched skills
-    def generate_resume(self, job_description):
-        logging.info("Generating tailored resume based on job description.")
-        matched_skills, unmatched_skills = self.compare_skills(job_description)
+    # Call GPT-4 API
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are an expert resume tailoring assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
 
-        tailored_resume = f"--- Tailored Resume ---\n\n{self.resume_text}\n\n"
-        tailored_resume += "--- Skills Comparison ---\n"
-        tailored_resume += f"\nMatched Skills from Job Description: {', '.join(matched_skills)}\n"
-        tailored_resume += f"Unmatched Skills: {', '.join(unmatched_skills)}\n"
+    # Extract and process the response
+    output = response.choices[0].message.content
+    header, summary, comparison = process_gpt_output(output)
 
-        # Generate a downloadable DOCX
-        docx_buffer = BytesIO()
-        doc = Document()
-        doc.add_heading('Tailored Resume', 0)
-        doc.add_paragraph(self.resume_text)
-        doc.add_heading('Skills Comparison', level=1)
-        doc.add_paragraph(f"Matched Skills: {', '.join(matched_skills)}")
-        doc.add_paragraph(f"Unmatched Skills: {', '.join(unmatched_skills)}")
-        doc.save(docx_buffer)
-        docx_buffer.seek(0)
+    return header, summary, comparison
 
-        return tailored_resume, docx_buffer
-
-    # Function to generate PDF from text
-    def generate_pdf(self, text):
-        logging.info("Generating PDF version of the resume.")
-        pdf_buffer = BytesIO()
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", size=12)
-        for line in text.split("\n"):
-            pdf.cell(200, 10, txt=line, ln=True)
-
-        pdf.output(pdf_buffer)
-        pdf_buffer.seek(0)
-        return pdf_buffer
-
-# The class can now handle full resume text input and job comparison directly.
+def process_gpt_output(output):
+    # Process the GPT output and extract header, summary, and comparison
+    # This is a placeholder - you'll need to implement the actual processing logic
+    return "Processed Header", "Processed Summary", (["Your Skills"], ["Job Requirements"])
