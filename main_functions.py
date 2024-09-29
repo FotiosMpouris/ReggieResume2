@@ -137,26 +137,27 @@ def create_pdf(content, filename):
     # Set margins (left, top, right) in millimeters
     pdf.set_margins(25, 20, 20)
     
+    pdf.set_font("Helvetica", size=11)
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
     
-    # Split content into lines
-    lines = content.split('\n')
+    # Split content into sections
+    sections = content.split('\n\n')
     
-    # Center and bold the first line (assuming it's the name/title)
-    pdf.set_font("Helvetica", 'B', size=14)
-    pdf.cell(effective_page_width, 10, lines[0], align='C', ln=True)
+    # Process the first section (name, telephone, address, email)
+    pdf.multi_cell(effective_page_width, 5, sections[0], align='L')
     
-    # Add double space after the first line
-    pdf.ln(10)
+    # Add extra spacing after the first section
+    pdf.ln(10)  # You can adjust this value to increase or decrease the space
     
-    # Process the rest of the content
-    pdf.set_font("Helvetica", size=11)
-    sections = '\n'.join(lines[1:]).split('\n\n')
+    # Add a line after the first section
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.ln(3)  # Add some space after the line
     
-    for i, section in enumerate(sections):
+    # Process the rest of the sections
+    for i, section in enumerate(sections[1:], 1):  # Start from the second section
         # Justify text
         pdf.multi_cell(effective_page_width, 5, section, align='J')
         
@@ -167,7 +168,7 @@ def create_pdf(content, filename):
             pdf.ln(3)  # Add some space after the line
 
     pdf.output(filename)
-
+    
 # def create_pdf(content, filename):
 #     pdf = FPDF(format='Letter')  # Use Letter size for US standard
 #     pdf.add_page()
