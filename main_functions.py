@@ -121,12 +121,21 @@ def generate_cover_letter(resume, job_description):
 
     return response.choices[0].message.content
 
+class PDF(FPDF):
+    def header(self):
+        # No header for resume
+        pass
+
+    def footer(self):
+        # No footer for resume
+        pass
+
 def create_pdf(content, filename):
-    pdf = FPDF(format='Letter')  # Use Letter size for US standard
+    pdf = PDF(format='Letter')
     pdf.add_page()
     
     # Set margins (left, top, right) in millimeters
-    pdf.set_margins(20, 20, 20)
+    pdf.set_margins(25, 20, 20)
     
     pdf.set_font("Helvetica", size=11)
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
@@ -134,8 +143,37 @@ def create_pdf(content, filename):
     # Calculate effective page width (accounting for margins)
     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
     
-    pdf.multi_cell(effective_page_width, 5, content)
+    # Split content into sections
+    sections = content.split('\n\n')
+    
+    for i, section in enumerate(sections):
+        # Justify text
+        pdf.set_font("Helvetica", size=11)
+        pdf.multi_cell(effective_page_width, 5, section, align='J')
+        
+        # Add a line after each section except the last one
+        if i < len(sections) - 1:
+            pdf.ln(3)  # Add some space before the line
+            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+            pdf.ln(3)  # Add some space after the line
+
     pdf.output(filename)
+
+# def create_pdf(content, filename):
+#     pdf = FPDF(format='Letter')  # Use Letter size for US standard
+#     pdf.add_page()
+    
+#     # Set margins (left, top, right) in millimeters
+#     pdf.set_margins(25, 20, 20)
+    
+#     pdf.set_font("Helvetica", size=11)
+#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
+    
+#     # Calculate effective page width (accounting for margins)
+#     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+    
+#     pdf.multi_cell(effective_page_width, 5, content)
+#     pdf.output(filename)
 
 # Updated function for creating a PDF
 # def create_pdf(content, filename):
