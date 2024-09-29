@@ -69,7 +69,7 @@ def process_gpt_output(output):
     
     return header, summary, (your_skills, job_requirements), education, work_experience
 
-ef generate_full_resume(header, summary, skills_comparison, education, work_experience):
+def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
     
     # Extract the name from the header
