@@ -137,13 +137,17 @@ def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Set margins (left, top, right) in millimeters
-    pdf.set_margins(25, 20, 20)
+    # Adjust margins (left, top, right) in millimeters
+    # Increase left margin and decrease right margin to shift content left
+    left_margin = 20  # Reduced from 25
+    right_margin = 25  # Increased from 20
+    top_margin = 20
+    pdf.set_margins(left_margin, top_margin, right_margin)
     
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
-    effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+    effective_page_width = pdf.w - left_margin - right_margin
     
     # Split content into sections
     sections = content.split('\n\n')
@@ -157,7 +161,7 @@ def create_pdf(content, filename):
     text_width = pdf.get_string_width(first_section)
     
     # Calculate the starting x position to center the text
-    x_position = (effective_page_width - text_width) / 2 + pdf.l_margin
+    x_position = (effective_page_width - text_width) / 2 + left_margin
     
     # Set the position and print the centered text
     pdf.set_xy(x_position, pdf.get_y())
@@ -167,7 +171,7 @@ def create_pdf(content, filename):
     pdf.ln(10)  # You can adjust this value to increase or decrease the space
     
     # Add a line after the first section
-    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+    pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
     pdf.ln(3)  # Add some space after the line
     
     # Process the rest of the sections
@@ -179,10 +183,11 @@ def create_pdf(content, filename):
         # Add a line after each section except the last one
         if i < len(sections) - 1:
             pdf.ln(3)  # Add some space before the line
-            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+            pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
             pdf.ln(3)  # Add some space after the line
 
     pdf.output(filename)
+
 
     
 # import openai
