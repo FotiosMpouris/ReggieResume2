@@ -132,45 +132,45 @@ class PDF(FPDF):
         # No footer for resume
         pass
 
-def create_pdf(content, filename):
-    pdf = PDF(format='Letter')
-    pdf.add_page()
+    def create_pdf(content, filename):
+        pdf = PDF(format='Letter')
+        pdf.add_page()
     
-    # Set margins (left, top, right) in millimeters
-    pdf.set_margins(25, 20, 20)
+        # Set margins (left, top, right) in millimeters
+        pdf.set_margins(25, 20, 20)
     
-    pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
+        pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
-    # Calculate effective page width (accounting for margins)
-    effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+        # Calculate effective page width (accounting for margins)
+        effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
     
-    # Split content into sections
-    sections = content.split('\n\n')
+        # Split content into sections
+        sections = content.split('\n\n')
     
-    # Process the first section (name, telephone, address, email)
-    # Center align and make it slightly larger
-    pdf.set_font("Helvetica", 'B', size=12)
-    first_section_lines = sections[0].split('\n')
-    for line in first_section_lines:
-        pdf.cell(effective_page_width, 6, line, align='C', ln=True)
+        # Process the first section (name, telephone, address, email)
+        # Center align and make it slightly larger
+        pdf.set_font("Helvetica", 'B', size=12)
+        first_section_lines = sections[0].split('\n')
+        for line in first_section_lines:
+            pdf.cell(effective_page_width, 6, line, align='C', ln=True)
     
-    # Add extra spacing after the first section
-    pdf.ln(10)  # You can adjust this value to increase or decrease the space
+        # Add extra spacing after the first section
+        pdf.ln(10)  # You can adjust this value to increase or decrease the space
     
-    # Add a line after the first section
-    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-    pdf.ln(3)  # Add some space after the line
+        # Add a line after the first section
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(3)  # Add some space after the line
     
-    # Process the rest of the sections
-    pdf.set_font("Helvetica", size=11)
-    for i, section in enumerate(sections[1:], 1):  # Start from the second section
-        # Justify text
-        pdf.multi_cell(effective_page_width, 5, section, align='J')
+        # Process the rest of the sections
+        pdf.set_font("Helvetica", size=11)
+        for i, section in enumerate(sections[1:], 1):  # Start from the second section
+            # Justify text
+            pdf.multi_cell(effective_page_width, 5, section, align='J')
         
-        # Add a line after each section except the last one
-        if i < len(sections) - 1:
-            pdf.ln(3)  # Add some space before the line
-            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-            pdf.ln(3)  # Add some space after the line
+            # Add a line after each section except the last one
+            if i < len(sections) - 1:
+                pdf.ln(3)  # Add some space before the line
+                pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+                pdf.ln(3)  # Add some space after the line
 
-    pdf.output(filename)
+        pdf.output(filename)
