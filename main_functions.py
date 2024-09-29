@@ -122,15 +122,6 @@ def generate_cover_letter(resume, job_description):
     return response.choices[0].message.content
 
 
-class PDF(FPDF):
-    def header(self):
-        # No header for resume
-        pass
-
-    def footer(self):
-        # No footer for resume
-        pass
-
 
 class PDF(FPDF):
     def header(self):
