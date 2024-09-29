@@ -137,18 +137,27 @@ def create_pdf(content, filename):
     # Set margins (left, top, right) in millimeters
     pdf.set_margins(25, 20, 20)
     
-    pdf.set_font("Helvetica", size=11)
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
     
-    # Split content into sections
-    sections = content.split('\n\n')
+    # Split content into lines
+    lines = content.split('\n')
+    
+    # Center and bold the first line (assuming it's the name/title)
+    pdf.set_font("Helvetica", 'B', size=14)
+    pdf.cell(effective_page_width, 10, lines[0], align='C', ln=True)
+    
+    # Add double space after the first line
+    pdf.ln(10)
+    
+    # Process the rest of the content
+    pdf.set_font("Helvetica", size=11)
+    sections = '\n'.join(lines[1:]).split('\n\n')
     
     for i, section in enumerate(sections):
         # Justify text
-        pdf.set_font("Helvetica", size=11)
         pdf.multi_cell(effective_page_width, 5, section, align='J')
         
         # Add a line after each section except the last one
