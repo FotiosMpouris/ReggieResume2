@@ -152,7 +152,16 @@ def create_pdf(content, filename):
     # Center align and make it slightly larger
     pdf.set_font("Helvetica", 'B', size=12)
     first_section = sections[0].strip()
-    pdf.cell(effective_page_width, 6, first_section, align='C', ln=True)
+    
+    # Calculate the width of the text
+    text_width = pdf.get_string_width(first_section)
+    
+    # Calculate the starting x position to center the text
+    x_position = (effective_page_width - text_width) / 2 + pdf.l_margin
+    
+    # Set the position and print the centered text
+    pdf.set_xy(x_position, pdf.get_y())
+    pdf.cell(text_width, 6, first_section, align='C', ln=True)
     
     # Add extra spacing after the first section
     pdf.ln(10)  # You can adjust this value to increase or decrease the space
@@ -174,6 +183,7 @@ def create_pdf(content, filename):
             pdf.ln(3)  # Add some space after the line
 
     pdf.output(filename)
+
     
 # import openai
 # import re
