@@ -128,7 +128,7 @@ def create_pdf(content, filename):
     # Set margins (left, top, right) in millimeters
     pdf.set_margins(20, 20, 20)
     
-    pdf.set_font("Tahoma", size=10)
+    pdf.set_font("Helvetica", size=11)
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
