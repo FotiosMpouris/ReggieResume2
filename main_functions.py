@@ -121,11 +121,27 @@ def generate_cover_letter(resume, job_description):
 
     return response.choices[0].message.content
 
-# Updated function for creating a PDF
 def create_pdf(content, filename):
     pdf = FPDF(format='Letter')  # Use Letter size for US standard
     pdf.add_page()
-    pdf.set_font("Arial", size=11)  # Smaller font size
-    pdf.set_auto_page_break(auto=True, margin=20)  # Adjust margins
-    pdf.multi_cell(0, 5, content)  # Smaller line height
+    
+    # Set margins (left, top, right) in millimeters
+    pdf.set_margins(20, 20, 20)
+    
+    pdf.set_font("Tahoma", size=10)
+    pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
+    
+    # Calculate effective page width (accounting for margins)
+    effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+    
+    pdf.multi_cell(effective_page_width, 5, content)
     pdf.output(filename)
+
+# Updated function for creating a PDF
+# def create_pdf(content, filename):
+#     pdf = FPDF(format='Letter')  # Use Letter size for US standard
+#     pdf.add_page()
+#     pdf.set_font("Arial", size=11)  # Smaller font size
+#     pdf.set_auto_page_break(auto=True, margin=20)  # Adjust margins
+#     pdf.multi_cell(0, 5, content)  # Smaller line height
+#     pdf.output(filename)
