@@ -125,7 +125,7 @@ def generate_cover_letter(resume, job_description):
 def create_pdf(content, filename):
     pdf = FPDF(format='Letter')  # Use Letter size for US standard
     pdf.add_page()
-    pdf.set_font("Arial", size=10)  # Smaller font size
-    pdf.set_auto_page_break(auto=True, margin=15)  # Adjust margins
+    pdf.set_font("Arial", size=11)  # Smaller font size
+    pdf.set_auto_page_break(auto=True, margin=20)  # Adjust margins
     pdf.multi_cell(0, 5, content)  # Smaller line height
     pdf.output(filename)
