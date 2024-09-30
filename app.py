@@ -28,7 +28,11 @@ def generate_resume():
         try:
             with st.spinner("Analyzing and tailoring your resume..."):
                 header, summary, comparison, education, work_experience = analyze_resume_and_job(resume, job_description)
-                full_resume = generate_full_resume(header, summary, comparison, education, work_experience)
+                
+                # Extract candidate's name from the header
+                name = header.split('\n')[0]  # Assuming the first line of the header is the name
+                
+                full_resume = generate_full_resume(header, summary, comparison, education, work_experience, name)
                 cover_letter = generate_cover_letter(resume, job_description)
                 
                 st.session_state.resume_data = {
@@ -46,6 +50,30 @@ def generate_resume():
     else:
         st.warning("Please provide both your resume and the job description.")
 
+
+# def generate_resume():
+#     if resume and job_description:
+#         try:
+#             with st.spinner("Analyzing and tailoring your resume..."):
+#                 header, summary, comparison, education, work_experience = analyze_resume_and_job(resume, job_description)
+#                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience)
+#                 cover_letter = generate_cover_letter(resume, job_description)
+                
+#                 st.session_state.resume_data = {
+#                     'header': header,
+#                     'summary': summary,
+#                     'comparison': comparison,
+#                     'education': education,
+#                     'work_experience': work_experience,
+#                     'full_resume': full_resume,
+#                     'cover_letter': cover_letter
+#                 }
+#                 st.session_state.generated = True
+#         except Exception as e:
+#             st.error(f"An error occurred during generation: {str(e)}")
+#     else:
+#         st.warning("Please provide both your resume and the job description.")
+
 if st.button("Analyze and Tailor Resume"):
     generate_resume()
 
@@ -58,19 +86,32 @@ if st.session_state.generated:
     st.subheader("Custom Summary")
     st.success(data['summary'])
 
-    st.subheader("Skills Comparison")
-    comp_col1, comp_col2 = st.columns(2)
+    st.subheader(f"{data['header'].split('\n')[0]}'s Skills & Experience Comparison")
+comp_col1, comp_col2 = st.columns(2)
 
-    # Display the skills and experience in two separate columns
-    with comp_col1:
-        st.markdown("### Your Skills & Experience")
-        for skill in data['comparison'][0]:
-            st.markdown(f"- {skill}")
+with comp_col1:
+    st.markdown(f"### {data['header'].split('\n')[0]}'s Skills & Experience")
+    for skill in data['comparison'][0]:
+        st.markdown(f"- {skill}")
 
-    with comp_col2:
-        st.markdown("### Job Requirements")
-        for req in data['comparison'][1]:
-            st.markdown(f"- {req}")
+with comp_col2:
+    st.markdown("### Job Requirements")
+    for req in data['comparison'][1]:
+        st.markdown(f"- {req}")
+
+    # st.subheader("Skills Comparison")
+    # comp_col1, comp_col2 = st.columns(2)
+
+    # # Display the skills and experience in two separate columns
+    # with comp_col1:
+    #     st.markdown("### Your Skills & Experience")
+    #     for skill in data['comparison'][0]:
+    #         st.markdown(f"- {skill}")
+
+    # with comp_col2:
+    #     st.markdown("### Job Requirements")
+    #     for req in data['comparison'][1]:
+    #         st.markdown(f"- {req}")
 
     
     # st.subheader("Skills Comparison")
