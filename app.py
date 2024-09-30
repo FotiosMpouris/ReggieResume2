@@ -80,8 +80,7 @@ if st.session_state.generated:
     st.info("Please review and edit the generated resume to ensure all information is accurate and fits on one page. You may need to adjust the work experience and education sections.")
     
     st.subheader("Cover Letter")
-    st.markdown("```\n" + data['full_resume'] + "\n```")
-    #st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
+    st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
 
     # Generate PDF downloads
     try:
