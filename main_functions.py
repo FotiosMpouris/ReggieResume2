@@ -199,7 +199,7 @@ def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Reduce margins (left, top, right) in millimeters
+    # Set margins (left, top, right) in millimeters
     left_margin = 20
     right_margin = 20
     top_margin = 20
@@ -214,25 +214,14 @@ def create_pdf(content, filename):
     sections = re.split(r'\n(?=SUMMARY|JOB REQUIREMENTS|.*SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
     
     for section in sections:
-        if section.strip().startswith(('JOB REQUIREMENTS', 'SKILLS & EXPERIENCE')):
-            # Handle the Job Requirements and Skills & Experience sections
+        if section.startswith(('SUMMARY', 'JOB REQUIREMENTS', 'SKILLS & EXPERIENCE', 'EDUCATION', 'RELEVANT WORK EXPERIENCE')):
             lines = section.split('\n')
             pdf.set_font("Helvetica", 'B', size=11)
             pdf.cell(effective_page_width, 6, lines[0], ln=True)
             pdf.set_font("Helvetica", size=10)
             
-            for line in lines[1:]:
-                pdf.multi_cell(effective_page_width, 5, line.strip(), align='L')
-            
-            pdf.ln(3)
-        elif section.startswith(('SUMMARY', 'EDUCATION', 'RELEVANT WORK EXPERIENCE')):
-            # Handle other sections
-            lines = section.split('\n')
-            pdf.set_font("Helvetica", 'B', size=11)
-            pdf.cell(effective_page_width, 6, lines[0], ln=True)
-            pdf.set_font("Helvetica", size=10)
             section_content = '\n'.join(lines[1:])
-            pdf.multi_cell(effective_page_width, 5, section_content, align='J')
+            pdf.multi_cell(effective_page_width, 5, section_content, align='L')
         else:
             # Handle the header
             pdf.set_font("Helvetica", 'B', size=12)
