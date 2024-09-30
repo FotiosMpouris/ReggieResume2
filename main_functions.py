@@ -7,8 +7,7 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. 5 detailed comparisons of the candidate's skills and the job requirements, listing at least 5 key points for each by listing out the
-    job requirement first and then adding a * and then listing out the candidate's skill that best matches the job description.
+    3. 5 detailed comparisons of the candidate's skills and the job requirements, listing at least 5 key points for each by listing out the job requirement first and then adding a * and then listing out the candidate's skill that best matches the job description.
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize the most relevant work experience for this job, focusing on the most recent or most applicable positions.
     """
