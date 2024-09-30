@@ -69,10 +69,16 @@ def process_gpt_output(output):
     
     return header, summary, (your_skills, job_requirements), education, work_experience
 
-
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
-    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+    # Extract the name from the header
+    name = header.split('\n')[0].strip()
+    
+    # Create the comparison string with proper formatting
+    comparison = f"{name} Skills & Experience|Job Requirements\n"
+    for skill, req in zip(skills, requirements):
+        comparison += f"• {skill}|• {req}\n"
     
     full_resume = f"""
 {header}
@@ -80,7 +86,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
+SKILLS COMPARISON
 {comparison}
 
 EDUCATION
@@ -90,6 +96,27 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+#     skills, requirements = skills_comparison
+#     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+#     return full_resume
 
 # New function for generating a cover letter
 def generate_cover_letter(resume, job_description):
@@ -138,40 +165,120 @@ def create_pdf(content, filename):
     pdf.add_page()
     
     # Set margins (left, top, right) in millimeters
-    pdf.set_margins(25, 20, 20)
+    left_margin = 25
+    right_margin = 25
+    top_margin = 20
+    pdf.set_margins(left_margin, top_margin, right_margin)
     
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
-    effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+    effective_page_width = pdf.w - left_margin - right_margin
     
     # Split content into sections
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    # Center align and make it slightly larger
     pdf.set_font("Helvetica", 'B', size=12)
     first_section_lines = sections[0].split('\n')
     for line in first_section_lines:
         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
     
     # Add extra spacing after the first section
-    pdf.ln(10)  # You can adjust this value to increase or decrease the space
+    pdf.ln(10)
     
     # Add a line after the first section
-    pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-    pdf.ln(3)  # Add some space after the line
+    pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+    pdf.ln(3)
     
     # Process the rest of the sections
     pdf.set_font("Helvetica", size=11)
-    for i, section in enumerate(sections[1:], 1):  # Start from the second section
-        # Justify text
-        pdf.multi_cell(effective_page_width, 5, section, align='J')
+    for i, section in enumerate(sections[1:], 1):
+        if section.startswith("SKILLS COMPARISON"):
+            # Handle the Skills Comparison section
+            lines = section.split('\n')
+            pdf.set_font("Helvetica", 'B', size=11)
+            pdf.cell(effective_page_width, 6, lines[0], ln=True)  # Section title
+            pdf.set_font("Helvetica", size=11)
+            
+            # Calculate column widths
+            col_width = effective_page_width / 2 - 2  # Subtract 2 for padding
+            
+            for line in lines[1:]:
+                if '|' in line:
+                    left, right = line.split('|')
+                    start_y = pdf.get_y()
+                    
+                    # Left column
+                    pdf.set_xy(left_margin, start_y)
+                    pdf.multi_cell(col_width, 5, left.strip(), align='L')
+                    
+                    # Right column
+                    right_col_x = left_margin + col_width + 4
+                    pdf.set_xy(right_col_x, start_y)
+                    pdf.multi_cell(col_width, 5, right.strip(), align='L')
+                    
+                    # Move to the next line
+                    pdf.set_y(max(pdf.get_y(), start_y + 5))
+                else:
+                    pdf.cell(effective_page_width, 5, line, ln=True)
+            
+            # Add a vertical line between columns
+            pdf.line(left_margin + col_width + 2, 
+                     pdf.get_y() - (len(lines) - 1) * 5, 
+                     left_margin + col_width + 2, 
+                     pdf.get_y())
+        else:
+            # Justify text for other sections
+            pdf.multi_cell(effective_page_width, 5, section, align='J')
         
         # Add a line after each section except the last one
         if i < len(sections) - 1:
-            pdf.ln(3)  # Add some space before the line
-            pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-            pdf.ln(3)  # Add some space after the line
+            pdf.ln(3)
+            pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+            pdf.ln(3)
 
     pdf.output(filename)
+
+# def create_pdf(content, filename):
+#     pdf = PDF(format='Letter')
+#     pdf.add_page()
+    
+#     # Set margins (left, top, right) in millimeters
+#     pdf.set_margins(25, 20, 20)
+    
+#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
+    
+#     # Calculate effective page width (accounting for margins)
+#     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
+    
+#     # Split content into sections
+#     sections = content.split('\n\n')
+    
+#     # Process the first section (name, telephone, address, email)
+#     # Center align and make it slightly larger
+#     pdf.set_font("Helvetica", 'B', size=12)
+#     first_section_lines = sections[0].split('\n')
+#     for line in first_section_lines:
+#         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
+    
+#     # Add extra spacing after the first section
+#     pdf.ln(10)  # You can adjust this value to increase or decrease the space
+    
+#     # Add a line after the first section
+#     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+#     pdf.ln(3)  # Add some space after the line
+    
+#     # Process the rest of the sections
+#     pdf.set_font("Helvetica", size=11)
+#     for i, section in enumerate(sections[1:], 1):  # Start from the second section
+#         # Justify text
+#         pdf.multi_cell(effective_page_width, 5, section, align='J')
+        
+#         # Add a line after each section except the last one
+#         if i < len(sections) - 1:
+#             pdf.ln(3)  # Add some space before the line
+#             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+#             pdf.ln(3)  # Add some space after the line
+
+#     pdf.output(filename)
