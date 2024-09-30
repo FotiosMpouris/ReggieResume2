@@ -80,23 +80,69 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
     for skill, req in zip(skills, requirements):
         comparison += f"• {skill}|• {req}\n"
     
-    full_resume = f"""
-{header}
+    system_message = """
+    You are an expert resume writer with years of experience in creating tailored, professional resumes. Your task is to take the provided resume sections and create a cohesive, well-formatted resume. Pay special attention to maintaining the structure and formatting of the Skills Comparison section.
+    """
 
-SUMMARY
-{summary}
+    user_message = f"""
+    Please create a tailored resume using the following sections:
 
-SKILLS COMPARISON
-{comparison}
+    HEADER:
+    {header}
 
-EDUCATION
-{education}
+    SUMMARY:
+    {summary}
 
-RELEVANT WORK EXPERIENCE
-{work_experience}
-"""
+    SKILLS COMPARISON:
+    {comparison}
 
-    return full_resume
+    EDUCATION:
+    {education}
+
+    RELEVANT WORK EXPERIENCE:
+    {work_experience}
+
+    Ensure that the Skills Comparison section maintains its two-column format with bullet points. The resume should be professional, concise, and well-organized.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    return response.choices[0].message.content
+
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+#     skills, requirements = skills_comparison
+    
+#     # Extract the name from the header
+#     name = header.split('\n')[0].strip()
+    
+#     # Create the comparison string with proper formatting
+#     comparison = f"{name} Skills & Experience|Job Requirements\n"
+#     for skill, req in zip(skills, requirements):
+#         comparison += f"• {skill}|• {req}\n"
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS COMPARISON
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+
+#     return full_resume
 
 # def generate_full_resume(header, summary, skills_comparison, education, work_experience):
 #     skills, requirements = skills_comparison
@@ -177,69 +223,136 @@ def create_pdf(content, filename):
     effective_page_width = pdf.w - left_margin - right_margin
     
     # Split content into sections
-    sections = content.split('\n\n')
+    sections = re.split(r'\n(?=HEADER:|SUMMARY:|SKILLS COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', content)
     
-    # Process the first section (name, telephone, address, email)
-    pdf.set_font("Helvetica", 'B', size=12)
-    first_section_lines = sections[0].split('\n')
-    for line in first_section_lines:
-        pdf.cell(effective_page_width, 6, line, align='C', ln=True)
-    
-    # Add extra spacing after the first section
-    pdf.ln(10)
-    
-    # Add a line after the first section
-    pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-    pdf.ln(3)
-    
-    # Process the rest of the sections
-    pdf.set_font("Helvetica", size=11)
-    for i, section in enumerate(sections[1:], 1):
-        if section.startswith("SKILLS COMPARISON"):
-            # Handle the Skills Comparison section
-            lines = section.split('\n')
+    for section in sections:
+        if section.startswith("HEADER:"):
+            pdf.set_font("Helvetica", 'B', size=12)
+            header_lines = section.split('\n')[1:]  # Skip the "HEADER:" line
+            for line in header_lines:
+                pdf.cell(effective_page_width, 6, line.strip(), align='C', ln=True)
+            pdf.ln(10)
+        elif section.startswith("SKILLS COMPARISON:"):
             pdf.set_font("Helvetica", 'B', size=11)
-            pdf.cell(effective_page_width, 6, lines[0], ln=True)  # Section title
-            pdf.set_font("Helvetica", size=11)
+            pdf.cell(effective_page_width, 6, "SKILLS COMPARISON", ln=True)
+            pdf.set_font("Helvetica", size=10)
             
-            # Calculate column widths
-            col_width = effective_page_width / 2 - 2  # Subtract 2 for padding
+            lines = section.split('\n')[1:]  # Skip the "SKILLS COMPARISON:" line
+            col_width = effective_page_width / 2 - 2
             
-            for line in lines[1:]:
+            for line in lines:
                 if '|' in line:
                     left, right = line.split('|')
                     start_y = pdf.get_y()
                     
-                    # Left column
                     pdf.set_xy(left_margin, start_y)
                     pdf.multi_cell(col_width, 5, left.strip(), align='L')
                     
-                    # Right column
-                    right_col_x = left_margin + col_width + 4
-                    pdf.set_xy(right_col_x, start_y)
+                    pdf.set_xy(left_margin + col_width + 4, start_y)
                     pdf.multi_cell(col_width, 5, right.strip(), align='L')
                     
-                    # Move to the next line
                     pdf.set_y(max(pdf.get_y(), start_y + 5))
                 else:
-                    pdf.cell(effective_page_width, 5, line, ln=True)
+                    pdf.cell(effective_page_width, 5, line.strip(), ln=True)
             
-            # Add a vertical line between columns
+            # Add vertical line between columns
             pdf.line(left_margin + col_width + 2, 
-                     pdf.get_y() - (len(lines) - 1) * 5, 
+                     pdf.get_y() - len(lines) * 5, 
                      left_margin + col_width + 2, 
                      pdf.get_y())
         else:
-            # Justify text for other sections
-            pdf.multi_cell(effective_page_width, 5, section, align='J')
+            pdf.set_font("Helvetica", 'B', size=11)
+            section_title = section.split('\n')[0]
+            pdf.cell(effective_page_width, 6, section_title, ln=True)
+            pdf.set_font("Helvetica", size=10)
+            section_content = '\n'.join(section.split('\n')[1:])
+            pdf.multi_cell(effective_page_width, 5, section_content, align='J')
         
-        # Add a line after each section except the last one
-        if i < len(sections) - 1:
-            pdf.ln(3)
-            pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-            pdf.ln(3)
+        pdf.ln(3)
+        pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+        pdf.ln(3)
 
     pdf.output(filename)
+
+# def create_pdf(content, filename):
+#     pdf = PDF(format='Letter')
+#     pdf.add_page()
+    
+#     # Set margins (left, top, right) in millimeters
+#     left_margin = 25
+#     right_margin = 25
+#     top_margin = 20
+#     pdf.set_margins(left_margin, top_margin, right_margin)
+    
+#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
+    
+#     # Calculate effective page width (accounting for margins)
+#     effective_page_width = pdf.w - left_margin - right_margin
+    
+#     # Split content into sections
+#     sections = content.split('\n\n')
+    
+#     # Process the first section (name, telephone, address, email)
+#     pdf.set_font("Helvetica", 'B', size=12)
+#     first_section_lines = sections[0].split('\n')
+#     for line in first_section_lines:
+#         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
+    
+#     # Add extra spacing after the first section
+#     pdf.ln(10)
+    
+#     # Add a line after the first section
+#     pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+#     pdf.ln(3)
+    
+#     # Process the rest of the sections
+#     pdf.set_font("Helvetica", size=11)
+#     for i, section in enumerate(sections[1:], 1):
+#         if section.startswith("SKILLS COMPARISON"):
+#             # Handle the Skills Comparison section
+#             lines = section.split('\n')
+#             pdf.set_font("Helvetica", 'B', size=11)
+#             pdf.cell(effective_page_width, 6, lines[0], ln=True)  # Section title
+#             pdf.set_font("Helvetica", size=11)
+            
+#             # Calculate column widths
+#             col_width = effective_page_width / 2 - 2  # Subtract 2 for padding
+            
+#             for line in lines[1:]:
+#                 if '|' in line:
+#                     left, right = line.split('|')
+#                     start_y = pdf.get_y()
+                    
+#                     # Left column
+#                     pdf.set_xy(left_margin, start_y)
+#                     pdf.multi_cell(col_width, 5, left.strip(), align='L')
+                    
+#                     # Right column
+#                     right_col_x = left_margin + col_width + 4
+#                     pdf.set_xy(right_col_x, start_y)
+#                     pdf.multi_cell(col_width, 5, right.strip(), align='L')
+                    
+#                     # Move to the next line
+#                     pdf.set_y(max(pdf.get_y(), start_y + 5))
+#                 else:
+#                     pdf.cell(effective_page_width, 5, line, ln=True)
+            
+#             # Add a vertical line between columns
+#             pdf.line(left_margin + col_width + 2, 
+#                      pdf.get_y() - (len(lines) - 1) * 5, 
+#                      left_margin + col_width + 2, 
+#                      pdf.get_y())
+#         else:
+#             # Justify text for other sections
+#             pdf.multi_cell(effective_page_width, 5, section, align='J')
+        
+#         # Add a line after each section except the last one
+#         if i < len(sections) - 1:
+#             pdf.ln(3)
+#             pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+#             pdf.ln(3)
+
+#     pdf.output(filename)
 
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
