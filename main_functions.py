@@ -55,56 +55,19 @@ def analyze_resume_and_job(resume, job_description):
     return process_gpt_output(output)
 
 def process_gpt_output(output):
-    try:
-        # Split the GPT output into sections based on known section headers
-        sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
-
-        # Initialize variables for all sections
-        header, summary, comparison, education, work_experience = '', '', ([], []), '', ''
-
-        # Process HEADER section
-        if 'HEADER:' in sections[0]:
-            header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
-
-        # Process SUMMARY section
-        if len(sections) > 1 and 'SUMMARY:' in sections[1]:
-            summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
-
-        # Process COMPARISON section
-        if len(sections) > 2 and 'COMPARISON:' in sections[2]:
-            comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-            your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-            job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
-            comparison = (your_skills, job_requirements)
-
-        # Process EDUCATION section
-        if len(sections) > 3 and 'EDUCATION:' in sections[3]:
-            education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-
-        # Process RELEVANT WORK EXPERIENCE section
-        if len(sections) > 4 and 'RELEVANT WORK EXPERIENCE:' in sections[4]:
-            work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
-
-        return header, summary, comparison, education, work_experience
-
-    except IndexError as e:
-        raise ValueError("Unexpected output format from GPT. Missing sections in response.") from e
-
-
-# def process_gpt_output(output):
-#     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
     
-#     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
-#     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+    summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
     
-#     comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-#     your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-#     job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
     
-#     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-#     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
     
-#     return header, summary, (your_skills, job_requirements), education, work_experience
+    return header, summary, (your_skills, job_requirements), education, work_experience
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
@@ -201,7 +164,7 @@ class PDF(FPDF):
 def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
-
+    
     # Set margins (left, top, right) in millimeters
     left_margin = 25
     right_margin = 25
@@ -215,65 +178,61 @@ def create_pdf(content, filename):
     
     # Split content into sections
     sections = content.split('\n\n')
-
+    
     # Process the first section (name, telephone, address, email)
     pdf.set_font("Helvetica", 'B', size=12)
     first_section_lines = sections[0].split('\n')
     for line in first_section_lines:
         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
-
+    
     # Add extra spacing after the first section
     pdf.ln(10)
-
+    
     # Add a line after the first section
     pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
     pdf.ln(3)
-
+    
     # Process the rest of the sections
     pdf.set_font("Helvetica", size=11)
     for i, section in enumerate(sections[1:], 1):
         if section.startswith("SKILLS COMPARISON"):
             # Handle the Skills Comparison section
             lines = section.split('\n')
-
-            # Set up headers for the comparison columns
             pdf.set_font("Helvetica", 'B', size=11)
-            col_width = effective_page_width / 2 - 5  # Subtract 5 for padding
-
-            # Job Requirements on the left
-            pdf.cell(col_width, 6, "Job Requirements", align='C', ln=0)
-            # My Skills & Experience on the right
-            pdf.cell(col_width, 6, "My Skills & Experience", align='C', ln=1)
-            
-            pdf.ln(3)  # Spacing before bullet points
-
+            pdf.cell(effective_page_width, 6, lines[0], ln=True)  # Section title
             pdf.set_font("Helvetica", size=11)
-
-            # Iterate through each comparison line and split into left and right columns
+            
+            # Calculate column widths
+            col_width = effective_page_width / 2 - 2  # Subtract 2 for padding
+            
             for line in lines[1:]:
                 if '|' in line:
                     left, right = line.split('|')
-                    left = left.strip()
-                    right = right.strip()
+                    start_y = pdf.get_y()
                     
-                    # Left column - Job Requirements
-                    pdf.set_xy(left_margin, pdf.get_y())
-                    pdf.multi_cell(col_width, 5, f"• {left}", align='L')
-
-                    # Right column - My Skills & Experience
-                    current_y = pdf.get_y()  # Get current y position after left column is printed
-                    pdf.set_xy(left_margin + col_width + 10, current_y)  # Move to the right column
-                    pdf.multi_cell(col_width, 5, f"• {right}", align='L')
-
-                    # Ensure both columns have the same height by adjusting y position
-                    pdf.ln(3)
-
-            # Add a vertical space between sections
-            pdf.ln(3)
+                    # Left column
+                    pdf.set_xy(left_margin, start_y)
+                    pdf.multi_cell(col_width, 5, left.strip(), align='L')
+                    
+                    # Right column
+                    right_col_x = left_margin + col_width + 4
+                    pdf.set_xy(right_col_x, start_y)
+                    pdf.multi_cell(col_width, 5, right.strip(), align='L')
+                    
+                    # Move to the next line
+                    pdf.set_y(max(pdf.get_y(), start_y + 5))
+                else:
+                    pdf.cell(effective_page_width, 5, line, ln=True)
+            
+            # Add a vertical line between columns
+            pdf.line(left_margin + col_width + 2, 
+                     pdf.get_y() - (len(lines) - 1) * 5, 
+                     left_margin + col_width + 2, 
+                     pdf.get_y())
         else:
-            # For other sections, justify the text
+            # Justify text for other sections
             pdf.multi_cell(effective_page_width, 5, section, align='J')
-
+        
         # Add a line after each section except the last one
         if i < len(sections) - 1:
             pdf.ln(3)
@@ -281,85 +240,4 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
-
-
-# def create_pdf(content, filename):
-#     pdf = PDF(format='Letter')
-#     pdf.add_page()
-    
-#     # Set margins (left, top, right) in millimeters
-#     left_margin = 25
-#     right_margin = 25
-#     top_margin = 20
-#     pdf.set_margins(left_margin, top_margin, right_margin)
-    
-#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
-    
-#     # Calculate effective page width (accounting for margins)
-#     effective_page_width = pdf.w - left_margin - right_margin
-    
-#     # Split content into sections
-#     sections = content.split('\n\n')
-    
-#     # Process the first section (name, telephone, address, email)
-#     pdf.set_font("Helvetica", 'B', size=12)
-#     first_section_lines = sections[0].split('\n')
-#     for line in first_section_lines:
-#         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
-    
-#     # Add extra spacing after the first section
-#     pdf.ln(10)
-    
-#     # Add a line after the first section
-#     pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-#     pdf.ln(3)
-    
-#     # Process the rest of the sections
-#     pdf.set_font("Helvetica", size=11)
-#     for i, section in enumerate(sections[1:], 1):
-#         if section.startswith("SKILLS COMPARISON"):
-#             # Handle the Skills Comparison section
-#             lines = section.split('\n')
-#             pdf.set_font("Helvetica", 'B', size=11)
-#             pdf.cell(effective_page_width, 6, lines[0], ln=True)  # Section title
-#             pdf.set_font("Helvetica", size=11)
-            
-#             # Calculate column widths
-#             col_width = effective_page_width / 2 - 2  # Subtract 2 for padding
-            
-#             for line in lines[1:]:
-#                 if '|' in line:
-#                     left, right = line.split('|')
-#                     start_y = pdf.get_y()
-                    
-#                     # Left column
-#                     pdf.set_xy(left_margin, start_y)
-#                     pdf.multi_cell(col_width, 5, left.strip(), align='L')
-                    
-#                     # Right column
-#                     right_col_x = left_margin + col_width + 4
-#                     pdf.set_xy(right_col_x, start_y)
-#                     pdf.multi_cell(col_width, 5, right.strip(), align='L')
-                    
-#                     # Move to the next line
-#                     pdf.set_y(max(pdf.get_y(), start_y + 5))
-#                 else:
-#                     pdf.cell(effective_page_width, 5, line, ln=True)
-            
-#             # Add a vertical line between columns
-#             pdf.line(left_margin + col_width + 2, 
-#                      pdf.get_y() - (len(lines) - 1) * 5, 
-#                      left_margin + col_width + 2, 
-#                      pdf.get_y())
-#         else:
-#             # Justify text for other sections
-#             pdf.multi_cell(effective_page_width, 5, section, align='J')
-        
-#         # Add a line after each section except the last one
-#         if i < len(sections) - 1:
-#             pdf.ln(3)
-#             pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-#             pdf.ln(3)
-
-#     pdf.output(filename)
 
