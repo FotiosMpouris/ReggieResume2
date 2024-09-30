@@ -165,6 +165,7 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+    
 # def generate_full_resume(header, summary, skills_comparison, education, work_experience):
 #     skills, requirements = skills_comparison
     
