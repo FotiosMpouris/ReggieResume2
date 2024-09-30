@@ -30,10 +30,8 @@ def analyze_resume_and_job(resume, job_description):
 
     COMPARISON:
     [Your Skills & Experience]|[Job Requirements]
-    Skill/Experience 1
-    |Requirement 1
-    Skill/Experience 2
-    |Requirement 2
+    Skill/Experience 1|Requirement 1
+    Skill/Experience 2|Requirement 2
     Skill/Experience 3|Requirement 3
     Skill/Experience 4|Requirement 4
     Skill/Experience 5|Requirement 5
