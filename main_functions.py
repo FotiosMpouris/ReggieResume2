@@ -136,7 +136,7 @@ def create_pdf(content, filename):
     pdf.add_page()
     
     # Set margins (left, top, right) in millimeters
-    pdf.set_margins(25, 20, 20)
+    pdf.set_margins(20, 15, 15)
     
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
