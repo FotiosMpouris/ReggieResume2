@@ -75,10 +75,10 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
     # Extract the name from the header
     name = header.split('\n')[0].strip()
     
-    # Create the comparison string with proper formatting
-    comparison = f"{name} Skills & Experience|Job Requirements\n"
-    for skill, req in zip(skills, requirements):
-        comparison += f"• {skill}|• {req}\n"
+    # Create the comparison string with the new format
+    comparison = f"Job Requirements | {name} Skills & Experience\n"
+    for req, skill in zip(requirements, skills):
+        comparison += f"• {req} → {skill}\n"
     
     system_message = """
     You are an expert resume writer with years of experience in creating tailored, professional resumes. Your task is to take the provided resume sections and create a cohesive, well-formatted resume. Pay special attention to maintaining the structure and formatting of the Skills Comparison section.
@@ -102,7 +102,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
     RELEVANT WORK EXPERIENCE:
     {work_experience}
 
-    Ensure that the Skills Comparison section maintains its two-column format with bullet points. The resume should be professional, concise, and well-organized.
+    Ensure that the Skills Comparison section maintains its format with Job Requirements followed by an arrow pointing to the corresponding skill or experience. The resume should be professional, concise, and well-organized.
     """
 
     response = openai.ChatCompletion.create(
@@ -211,9 +211,9 @@ def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Set margins (left, top, right) in millimeters
-    left_margin = 25
-    right_margin = 25
+    # Reduce margins (left, top, right) in millimeters
+    left_margin = 20  # Reduced from 25
+    right_margin = 20  # Reduced from 25
     top_margin = 20
     pdf.set_margins(left_margin, top_margin, right_margin)
     
@@ -238,28 +238,11 @@ def create_pdf(content, filename):
             pdf.set_font("Helvetica", size=10)
             
             lines = section.split('\n')[1:]  # Skip the "SKILLS COMPARISON:" line
-            col_width = effective_page_width / 2 - 2
-            
             for line in lines:
-                if '|' in line:
-                    left, right = line.split('|')
-                    start_y = pdf.get_y()
-                    
-                    pdf.set_xy(left_margin, start_y)
-                    pdf.multi_cell(col_width, 5, left.strip(), align='L')
-                    
-                    pdf.set_xy(left_margin + col_width + 4, start_y)
-                    pdf.multi_cell(col_width, 5, right.strip(), align='L')
-                    
-                    pdf.set_y(max(pdf.get_y(), start_y + 5))
+                if '→' in line:
+                    pdf.multi_cell(effective_page_width, 5, line.strip(), align='L')
                 else:
                     pdf.cell(effective_page_width, 5, line.strip(), ln=True)
-            
-            # Add vertical line between columns
-            pdf.line(left_margin + col_width + 2, 
-                     pdf.get_y() - len(lines) * 5, 
-                     left_margin + col_width + 2, 
-                     pdf.get_y())
         else:
             pdf.set_font("Helvetica", 'B', size=11)
             section_title = section.split('\n')[0]
