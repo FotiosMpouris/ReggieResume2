@@ -147,55 +147,54 @@ def create_pdf(content, filename):
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    # Center align and make it slightly larger
     pdf.set_font("Helvetica", 'B', size=12)
     first_section_lines = sections[0].split('\n')
+    user_name = first_section_lines[0]  # Assuming the first line is the user's name
     for line in first_section_lines:
         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
     
     # Add extra spacing after the first section
-    pdf.ln(10)  # You can adjust this value to increase or decrease the space
+    pdf.ln(10)
     
     # Add a line after the first section
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-    pdf.ln(3)  # Add some space after the line
+    pdf.ln(3)
     
     # Process the rest of the sections
     pdf.set_font("Helvetica", size=11)
-    for i, section in enumerate(sections[1:], 1):  # Start from the second section
+    for i, section in enumerate(sections[1:], 1):
         if "SKILLS & EXPERIENCE" in section:
-            # Use a smaller font size for the comparison section
+            pdf.set_font("Helvetica", 'B', size=11)
+            pdf.cell(effective_page_width, 5, f"{user_name}'s Skills & Experience | Job Requirements", ln=True)
+            pdf.ln(2)
+            
             pdf.set_font("Helvetica", size=6)
             
-            # Split the section into lines
-            lines = section.split('\n')
+            lines = section.split('\n')[1:]  # Skip the header line
             
-            # Write the header
-            pdf.cell(effective_page_width, 4, lines[0], ln=True)
-            pdf.ln(1)
+            col_width = effective_page_width / 2
             
-            # Write the comparison lines
-            for line in lines[1:]:
+            for line in lines:
                 if '|' in line:
                     left, right = line.split('|')
-                    pdf.cell(effective_page_width/2, 3, left.strip(), border='L', ln=0)
-                    pdf.cell(effective_page_width/2, 3, right.strip(), border='R', ln=1)
+                    pdf.cell(col_width, 4, left.strip(), border='LR', ln=0)
+                    pdf.cell(col_width, 4, right.strip(), border='LR', ln=1)
                 else:
-                    pdf.cell(effective_page_width, 3, line, ln=True)
+                    pdf.cell(effective_page_width, 4, line, border='LR', ln=1)
             
-            # Reset font size
+            pdf.cell(effective_page_width, 0, '', border='T', ln=1)  # Bottom border
+            
             pdf.set_font("Helvetica", size=11)
         else:
-            # Justify text for other sections
             pdf.multi_cell(effective_page_width, 5, section, align='J')
         
-        # Add a line after each section except the last one
         if i < len(sections) - 1:
-            pdf.ln(3)  # Add some space before the line
+            pdf.ln(3)
             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-            pdf.ln(3)  # Add some space after the line
+            pdf.ln(3)
 
     pdf.output(filename)
+
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
 #     pdf.add_page()
