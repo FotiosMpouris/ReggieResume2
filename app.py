@@ -147,7 +147,6 @@ if st.button("Start Over"):
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
-
 # import streamlit as st
 # import openai
 # from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf
