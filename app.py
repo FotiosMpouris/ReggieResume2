@@ -61,47 +61,7 @@ if st.session_state.generated:
     st.subheader("Skills Comparison")
     
     # Create the comparison table
-    comparison_table = """
-    <style>
-    .comparison-table {
-        display: flex;
-        width: 100%;
-    }
-    .column {
-        width: 50%;
-        padding: 10px;
-    }
-    .header {
-        font-weight: bold;
-        text-align: left;
-        margin-bottom: 10px;
-    }
-    .content {
-        text-align: left;
-    }
-    </style>
-    
-    <div class="comparison-table">
-        <div class="column">
-            <div class="header">My Skills and Experience</div>
-            <div class="content">
-                {0}
-            </div>
-        </div>
-        <div class="column">
-            <div class="header">Job Requirements</div>
-            <div class="content">
-                {1}
-            </div>
-        </div>
-    </div>
-    """
-    
-    skills_html = '<br>'.join(f"• {skill}" for skill in data['comparison'][0])
-    requirements_html = '<br>'.join(f"• {req}" for req in data['comparison'][1])
-    
-    formatted_comparison_table = comparison_table.format(skills_html, requirements_html)
-    st.markdown(formatted_comparison_table, unsafe_allow_html=True)
+    https://claude.ai/chat/087e59f6-e63d-4ebd-9e5f-dbdd3b3b5e18#:~:text=if%20st.,%3DTrue)
     
     st.subheader("Education")
     st.write(data['education'])
