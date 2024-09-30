@@ -53,21 +53,42 @@ def analyze_resume_and_job(resume, job_description):
 
     output = response.choices[0].message.content
     return process_gpt_output(output)
-
 def process_gpt_output(output):
     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
     
-    header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
-    summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
-    
-    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
-    
-    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    # Initialize variables with default values
+    header = summary = education = work_experience = ""
+    your_skills = job_requirements = []
+
+    # Process sections if they exist
+    if len(sections) > 0:
+        header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+    if len(sections) > 1:
+        summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    if len(sections) > 2:
+        comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+        your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+        job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    if len(sections) > 3:
+        education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+    if len(sections) > 4:
+        work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
     
     return header, summary, (your_skills, job_requirements), education, work_experience
+# def process_gpt_output(output):
+#     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    
+#     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+#     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    
+#     comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+#     your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+#     job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    
+#     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+#     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    
+#     return header, summary, (your_skills, job_requirements), education, work_experience
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
