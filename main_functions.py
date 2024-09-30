@@ -1,6 +1,8 @@
 import openai
 import re
 from fpdf import FPDF
+
+
 def analyze_resume_and_job(resume, job_description):
     system_message = """
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
