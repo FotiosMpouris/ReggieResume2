@@ -60,8 +60,51 @@ if st.session_state.generated:
 
     st.subheader("Skills Comparison")
     
-    # Create the comparison table
-    https://claude.ai/chat/087e59f6-e63d-4ebd-9e5f-dbdd3b3b5e18#:~:text=if%20st.,%3DTrue)
+    # Debug: Print comparison data structure
+    st.write("Debug: Comparison data structure")
+    st.write(data['comparison'])
+    
+    # Create the comparison table using f-strings
+    skills_html = '<br>'.join(f"• {skill}" for skill in data['comparison'][0])
+    requirements_html = '<br>'.join(f"• {req}" for req in data['comparison'][1])
+    
+    comparison_table = f"""
+    <style>
+    .comparison-table {{
+        display: flex;
+        width: 100%;
+    }}
+    .column {{
+        width: 50%;
+        padding: 10px;
+    }}
+    .header {{
+        font-weight: bold;
+        text-align: left;
+        margin-bottom: 10px;
+    }}
+    .content {{
+        text-align: left;
+    }}
+    </style>
+    
+    <div class="comparison-table">
+        <div class="column">
+            <div class="header">My Skills and Experience</div>
+            <div class="content">
+                {skills_html}
+            </div>
+        </div>
+        <div class="column">
+            <div class="header">Job Requirements</div>
+            <div class="content">
+                {requirements_html}
+            </div>
+        </div>
+    </div>
+    """
+    
+    st.markdown(comparison_table, unsafe_allow_html=True)
     
     st.subheader("Education")
     st.write(data['education'])
@@ -107,6 +150,7 @@ if st.button("Start Over"):
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
+
 # import streamlit as st
 # import openai
 # from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf
