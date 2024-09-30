@@ -165,24 +165,22 @@ def create_pdf(content, filename):
     for i, section in enumerate(sections[1:], 1):
         if "SKILLS & EXPERIENCE" in section:
             pdf.set_font("Helvetica", 'B', size=11)
-            pdf.cell(effective_page_width, 5, f"{user_name}'s Skills & Experience | Job Requirements", ln=True)
+            col_width = effective_page_width / 2
+            pdf.cell(col_width, 5, f"{user_name}'s Skills & Experience", ln=0)
+            pdf.cell(col_width, 5, "Job Requirements", ln=1)
             pdf.ln(2)
             
             pdf.set_font("Helvetica", size=6)
             
             lines = section.split('\n')[1:]  # Skip the header line
             
-            col_width = effective_page_width / 2
-            
             for line in lines:
                 if '|' in line:
                     left, right = line.split('|')
-                    pdf.cell(col_width, 4, left.strip(), border='LR', ln=0)
-                    pdf.cell(col_width, 4, right.strip(), border='LR', ln=1)
+                    pdf.cell(col_width, 4, left.strip(), ln=0)
+                    pdf.cell(col_width, 4, right.strip(), ln=1)
                 else:
-                    pdf.cell(effective_page_width, 4, line, border='LR', ln=1)
-            
-            pdf.cell(effective_page_width, 0, '', border='T', ln=1)  # Bottom border
+                    pdf.cell(effective_page_width, 4, line, ln=1)
             
             pdf.set_font("Helvetica", size=11)
         else:
