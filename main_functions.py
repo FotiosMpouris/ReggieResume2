@@ -71,7 +71,16 @@ def process_gpt_output(output):
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
-    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+    # Calculate the maximum length of skills and requirements for better alignment
+    max_skill_length = max(len(skill) for skill in skills)
+    max_req_length = max(len(req) for req in requirements)
+    
+    # Create the comparison section with better formatting
+    comparison = "SKILLS & EXPERIENCE".ljust(max_skill_length + 5) + "| JOB REQUIREMENTS\n"
+    comparison += "-" * (max_skill_length + 5) + "+" + "-" * (max_req_length + 1) + "\n"
+    for skill, req in zip(skills, requirements):
+        comparison += f"{skill:<{max_skill_length + 5}}| {req}\n"
     
     full_resume = f"""
 {header}
@@ -79,9 +88,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
 {comparison}
-
 EDUCATION
 {education}
 
@@ -89,6 +96,27 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+#     skills, requirements = skills_comparison
+#     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+#     return full_resume
 
 # New function for generating a cover letter
 def generate_cover_letter(resume, job_description):
