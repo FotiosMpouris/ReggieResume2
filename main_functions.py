@@ -166,7 +166,13 @@ def create_pdf(content, filename):
         if "SKILLS & EXPERIENCE" in section:
             pdf.set_font("Helvetica", 'B', size=11)
             col_width = effective_page_width / 2
-            pdf.cell(col_width, 5, f"{user_name}'s Skills & Experience", ln=0)
+            
+            # Adjust the position of the left column header
+            left_column_x = pdf.l_margin + 2  # Add a small offset to move it slightly right
+            pdf.set_x(left_column_x)
+            pdf.cell(col_width - 2, 5, f"{user_name}'s Skills & Experience", ln=0)
+            
+            # Keep the right column header as is
             pdf.cell(col_width, 5, "Job Requirements", ln=1)
             pdf.ln(2)
             
@@ -177,10 +183,13 @@ def create_pdf(content, filename):
             for line in lines:
                 if '|' in line:
                     left, right = line.split('|')
-                    pdf.cell(col_width, 4, left.strip(), ln=0)
+                    pdf.set_x(left_column_x)
+                    pdf.cell(col_width - 2, 4, left.strip(), ln=0)
+                    pdf.set_x(pdf.l_margin + col_width)
                     pdf.cell(col_width, 4, right.strip(), ln=1)
                 else:
-                    pdf.cell(effective_page_width, 4, line, ln=1)
+                    pdf.set_x(left_column_x)
+                    pdf.cell(effective_page_width - 2, 4, line, ln=1)
             
             pdf.set_font("Helvetica", size=11)
         else:
@@ -192,6 +201,7 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
+
 
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
