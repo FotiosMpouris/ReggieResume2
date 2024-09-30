@@ -57,17 +57,32 @@ if st.session_state.generated:
     
     st.subheader("Custom Summary")
     st.success(data['summary'])
-    
+
     st.subheader("Skills Comparison")
     comp_col1, comp_col2 = st.columns(2)
+
+    # Display the skills and experience in two separate columns
     with comp_col1:
-        st.markdown("**Your Skills & Experience**")
+        st.markdown("### Your Skills & Experience")
         for skill in data['comparison'][0]:
-            st.write(f"• {skill}")
+            st.markdown(f"- {skill}")
+
     with comp_col2:
-        st.markdown("**Job Requirements**")
+        st.markdown("### Job Requirements")
         for req in data['comparison'][1]:
-            st.write(f"• {req}")
+            st.markdown(f"- {req}")
+
+    
+    # st.subheader("Skills Comparison")
+    # comp_col1, comp_col2 = st.columns(2)
+    # with comp_col1:
+    #     st.markdown("**Your Skills & Experience**")
+    #     for skill in data['comparison'][0]:
+    #         st.write(f"• {skill}")
+    # with comp_col2:
+    #     st.markdown("**Job Requirements**")
+    #     for req in data['comparison'][1]:
+    #         st.write(f"• {req}")
     
     st.subheader("Education")
     st.write(data['education'])
