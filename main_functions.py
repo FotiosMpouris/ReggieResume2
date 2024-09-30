@@ -151,7 +151,7 @@ def create_pdf(content, filename):
     first_section_lines = sections[0].split('\n')
     user_name = first_section_lines[0]  # Assuming the first line is the user's name
     for line in first_section_lines:
-        pdf.cell(effective_page_width, 6, line, align='C', ln=True)
+        pdf.cell(effective_page_width, 6, line, align='L', ln=True)
     
     # Add extra spacing after the first section
     pdf.ln(10)
