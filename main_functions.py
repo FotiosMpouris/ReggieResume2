@@ -69,9 +69,11 @@ def process_gpt_output(output):
     
     return header, summary, (your_skills, job_requirements), education, work_experience
 
-def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+def generate_full_resume(header, summary, skills_comparison, education, work_experience, name):
     skills, requirements = skills_comparison
-    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+    # Formatting the skills and requirements as bullet points
+    comparison = "\n".join([f"• {skill:<50} | • {req}" for skill, req in zip(skills, requirements)])
     
     full_resume = f"""
 {header}
@@ -79,7 +81,8 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
+{name}'s Skills & Experience                              | Job Requirements
+----------------------------------------------------------
 {comparison}
 
 EDUCATION
@@ -89,6 +92,28 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+
+
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+#     skills, requirements = skills_comparison
+#     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS & EXPERIENCE                                 | JOB REQUIREMENTS
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+#     return full_resume
 
 # New function for generating a cover letter
 def generate_cover_letter(resume, job_description):
