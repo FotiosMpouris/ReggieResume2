@@ -58,54 +58,21 @@ if st.session_state.generated:
     st.subheader("Custom Summary")
     st.success(data['summary'])
 
+    
     st.subheader("Skills Comparison")
-    
-    # Debug: Print comparison data structure
-    st.write("Debug: Comparison data structure")
-    st.write(data['comparison'])
-    
-    # Create the comparison table using f-strings
-    skills_html = '<br>'.join(f"• {skill}" for skill in data['comparison'][0])
-    requirements_html = '<br>'.join(f"• {req}" for req in data['comparison'][1])
-    
-    comparison_table = f"""
-    <style>
-    .comparison-table {{
-        display: flex;
-        width: 100%;
-    }}
-    .column {{
-        width: 50%;
-        padding: 10px;
-    }}
-    .header {{
-        font-weight: bold;
-        text-align: left;
-        margin-bottom: 10px;
-    }}
-    .content {{
-        text-align: left;
-    }}
-    </style>
-    
-    <div class="comparison-table">
-        <div class="column">
-            <div class="header">My Skills and Experience</div>
-            <div class="content">
-                {skills_html}
-            </div>
-        </div>
-        <div class="column">
-            <div class="header">Job Requirements</div>
-            <div class="content">
-                {requirements_html}
-            </div>
-        </div>
-    </div>
-    """
-    
-    st.markdown(comparison_table, unsafe_allow_html=True)
-    
+    comp_col1, comp_col2 = st.columns(2)
+
+    # Display the skills and experience in two separate columns
+    with comp_col1:
+        st.markdown("### Your Skills & Experience")
+        for skill in data['comparison'][0]:
+            st.markdown(f"- {skill}")
+
+    with comp_col2:
+        st.markdown("### Job Requirements")
+        for req in data['comparison'][1]:
+            st.markdown(f"- {req}")
+         
     st.subheader("Education")
     st.write(data['education'])
     
