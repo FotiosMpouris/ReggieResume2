@@ -85,13 +85,13 @@ if st.session_state.generated:
         <div class="column">
             <div class="header">My Skills and Experience</div>
             <div class="content">
-                {skills}
+                {0}
             </div>
         </div>
         <div class="column">
             <div class="header">Job Requirements</div>
             <div class="content">
-                {requirements}
+                {1}
             </div>
         </div>
     </div>
@@ -100,7 +100,8 @@ if st.session_state.generated:
     skills_html = '<br>'.join(f"• {skill}" for skill in data['comparison'][0])
     requirements_html = '<br>'.join(f"• {req}" for req in data['comparison'][1])
     
-    st.markdown(comparison_table.format(skills=skills_html, requirements=requirements_html), unsafe_allow_html=True)
+    formatted_comparison_table = comparison_table.format(skills_html, requirements_html)
+    st.markdown(formatted_comparison_table, unsafe_allow_html=True)
     
     st.subheader("Education")
     st.write(data['education'])
