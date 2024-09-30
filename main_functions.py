@@ -1,7 +1,6 @@
 import openai
 import re
 from fpdf import FPDF
-
 def analyze_resume_and_job(resume, job_description):
     system_message = """
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
@@ -28,13 +27,19 @@ def analyze_resume_and_job(resume, job_description):
     SUMMARY:
     [Custom summary here]
 
-    COMPARISON:
-    [Your Skills & Experience]|[Job Requirements]
-    Skill/Experience 1|Requirement 1
-    Skill/Experience 2|Requirement 2
-    Skill/Experience 3|Requirement 3
-    Skill/Experience 4|Requirement 4
-    Skill/Experience 5|Requirement 5
+    YOUR SKILLS & EXPERIENCE:
+    • Skill/Experience 1
+    • Skill/Experience 2
+    • Skill/Experience 3
+    • Skill/Experience 4
+    • Skill/Experience 5
+
+    JOB REQUIREMENTS:
+    • Requirement 1
+    • Requirement 2
+    • Requirement 3
+    • Requirement 4
+    • Requirement 5
 
     EDUCATION:
     [Summarized education information]
@@ -54,33 +59,37 @@ def analyze_resume_and_job(resume, job_description):
     output = response.choices[0].message.content
     return process_gpt_output(output)
 
-
 def process_gpt_output(output):
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|YOUR SKILLS & EXPERIENCE:|JOB REQUIREMENTS:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
     
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
     
-    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    your_skills = re.sub(r'^YOUR SKILLS & EXPERIENCE:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+    your_skills = [skill.strip('• ').strip() for skill in your_skills]
     
-    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    job_requirements = re.sub(r'^JOB REQUIREMENTS:\s*', '', sections[3], flags=re.MULTILINE).strip().split('\n')
+    job_requirements = [req.strip('• ').strip() for req in job_requirements]
     
-    return header, summary, (your_skills, job_requirements), education, work_experience
+    education = re.sub(r'^EDUCATION:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[5], flags=re.MULTILINE).strip()
+    
+    return header, summary, your_skills, job_requirements, education, work_experience
 
-
-def generate_full_resume(header, summary, skills_comparison, education, work_experience):
-    skills, requirements = skills_comparison
-    
+# Make sure your generate_full_resume function is updated to accept 6 arguments
+def generate_full_resume(header, summary, your_skills, job_requirements, education, work_experience):
     # Extract the name from the header
     name = header.split('\n')[0].strip()
     
-    # Create the comparison string with proper formatting
-    comparison = f"{name} Skills & Experience|Job Requirements\n"
-    for skill, req in zip(skills, requirements):
-        comparison += f"• {skill}|• {req}\n"
+    # Create the Job Requirements section
+    job_requirements_section = "JOB REQUIREMENTS\n"
+    for req in job_requirements:
+        job_requirements_section += f"• {req}\n"
+    
+    # Create the Skills & Experience section
+    skills_experience_section = f"{name.upper()}'S SKILLS & EXPERIENCE\n"
+    for skill in your_skills:
+        skills_experience_section += f"• {skill}\n"
     
     full_resume = f"""
 {header}
@@ -88,8 +97,9 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS COMPARISON
-{comparison}
+{job_requirements_section}
+
+{skills_experience_section}
 
 EDUCATION
 {education}
@@ -97,8 +107,105 @@ EDUCATION
 RELEVANT WORK EXPERIENCE
 {work_experience}
 """
-
     return full_resume
+
+# def analyze_resume_and_job(resume, job_description):
+#     system_message = """
+#     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
+#     1. A tailored header for the resume, including the candidate's name and key contact information.
+#     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
+#     3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 5 key points for each.
+#     4. Extract and summarize the candidate's education information.
+#     5. Extract and summarize the most relevant work experience for this job, focusing on the most recent or most applicable positions.
+#     """
+
+#     user_message = f"""
+#     Please analyze the following resume and job description:
+
+#     Resume:
+#     {resume}
+
+#     Job Description:
+#     {job_description}
+
+#     Provide your analysis in the following format:
+#     HEADER:
+#     [Tailored header here]
+
+#     SUMMARY:
+#     [Custom summary here]
+
+#     COMPARISON:
+#     [Your Skills & Experience]|[Job Requirements]
+#     Skill/Experience 1|Requirement 1
+#     Skill/Experience 2|Requirement 2
+#     Skill/Experience 3|Requirement 3
+#     Skill/Experience 4|Requirement 4
+#     Skill/Experience 5|Requirement 5
+
+#     EDUCATION:
+#     [Summarized education information]
+
+#     RELEVANT WORK EXPERIENCE:
+#     [Summarized relevant work experience]
+#     """
+
+#     response = openai.ChatCompletion.create(
+#         model="gpt-4",
+#         messages=[
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message}
+#         ]
+#     )
+
+#     output = response.choices[0].message.content
+#     return process_gpt_output(output)
+
+
+# def process_gpt_output(output):
+#     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    
+#     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+#     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    
+#     comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+#     your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+#     job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    
+#     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+#     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    
+#     return header, summary, (your_skills, job_requirements), education, work_experience
+
+
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience):
+#     skills, requirements = skills_comparison
+    
+#     # Extract the name from the header
+#     name = header.split('\n')[0].strip()
+    
+#     # Create the comparison string with proper formatting
+#     comparison = f"{name} Skills & Experience|Job Requirements\n"
+#     for skill, req in zip(skills, requirements):
+#         comparison += f"• {skill}|• {req}\n"
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS COMPARISON
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+
+#     return full_resume
 
 class PDF(FPDF):
     def header(self):
