@@ -55,19 +55,56 @@ def analyze_resume_and_job(resume, job_description):
     return process_gpt_output(output)
 
 def process_gpt_output(output):
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    try:
+        # Split the GPT output into sections based on known section headers
+        sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+
+        # Initialize variables for all sections
+        header, summary, comparison, education, work_experience = '', '', ([], []), '', ''
+
+        # Process HEADER section
+        if 'HEADER:' in sections[0]:
+            header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+
+        # Process SUMMARY section
+        if len(sections) > 1 and 'SUMMARY:' in sections[1]:
+            summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+
+        # Process COMPARISON section
+        if len(sections) > 2 and 'COMPARISON:' in sections[2]:
+            comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+            your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+            job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+            comparison = (your_skills, job_requirements)
+
+        # Process EDUCATION section
+        if len(sections) > 3 and 'EDUCATION:' in sections[3]:
+            education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+
+        # Process RELEVANT WORK EXPERIENCE section
+        if len(sections) > 4 and 'RELEVANT WORK EXPERIENCE:' in sections[4]:
+            work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+
+        return header, summary, comparison, education, work_experience
+
+    except IndexError as e:
+        raise ValueError("Unexpected output format from GPT. Missing sections in response.") from e
+
+
+# def process_gpt_output(output):
+#     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
     
-    header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
-    summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+#     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+#     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
     
-    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+#     comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+#     your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+#     job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
     
-    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+#     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+#     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
     
-    return header, summary, (your_skills, job_requirements), education, work_experience
+#     return header, summary, (your_skills, job_requirements), education, work_experience
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
