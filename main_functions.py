@@ -165,14 +165,14 @@ class PDF(FPDF):
 def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
-    
+
     # Set margins and text properties
     pdf.set_margins(25, 20, 20)
     pdf.set_auto_page_break(auto=True, margin=20)
     
     # Effective page width considering margins
     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
-    
+
     # Split content into sections
     sections = content.split('\n\n')
     
@@ -182,27 +182,35 @@ def create_pdf(content, filename):
     for line in first_section_lines:
         pdf.cell(effective_page_width, 6, line, align='C', ln=True)
     
-    # Add space and separator
     pdf.ln(10)
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(3)
     
-    # Adjust for section text and column formatting
+    # Handle the 'Skills & Experience' section as a table
     pdf.set_font("Helvetica", size=11)
     for section in sections[1:]:
-        # Split lines for the skills comparison
         if 'SKILLS & EXPERIENCE' in section:
+            # Get the skills and requirements
             pdf.set_font("Helvetica", 'B', size=11)
-            pdf.multi_cell(effective_page_width, 6, section.splitlines()[0])  # Header
+            pdf.cell(effective_page_width, 6, section.splitlines()[0], ln=True)
             pdf.set_font("Helvetica", size=11)
-            for line in section.splitlines()[2:]:  # Process the actual content
-                pdf.multi_cell(effective_page_width, 6, line)
+
+            # Start a table-like structure for the comparison
+            table_start_y = pdf.get_y()
+            col_width = effective_page_width / 2 - 5  # Adjust for margin/padding
+            
+            skills_and_experience = section.splitlines()[3:]  # Skip header lines
+            for line in skills_and_experience:
+                skill, requirement = line.split('|')
+                pdf.cell(col_width, 6, skill.strip(), border=1)
+                pdf.cell(col_width, 6, requirement.strip(), border=1, ln=True)
+
+            pdf.ln(3)
         else:
             pdf.multi_cell(effective_page_width, 6, section, align='J')
-        
-        pdf.ln(3)
-
-    # Output the PDF file
+            pdf.ln(3)
+    
+    # Output the PDF
     pdf.output(filename)
 
 
