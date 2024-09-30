@@ -96,16 +96,6 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
 
-response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
-        ]
-    )
-
-    output = response.choices[0].message.content
-    return process_gpt_output(output)
     return full_resume
 
 # def generate_full_resume(header, summary, skills_comparison, education, work_experience):
