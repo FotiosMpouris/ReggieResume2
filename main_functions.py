@@ -204,9 +204,13 @@ def create_pdf(content, filename):
             lines = section.split('\n')[1:]  # Skip the header line
             
             max_y = pdf.get_y()
+            first_item = True
             for line in lines:
                 if '|' in line:
                     left, right = line.split('|')
+                    if first_item:
+                        first_item = False
+                        continue  # Skip the first item as it's redundant
                     pdf.set_xy(pdf.l_margin, max_y)
                     pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Unicode bullet point
                     new_y = pdf.get_y()
@@ -254,17 +258,17 @@ def create_pdf(content, filename):
 #     sections = content.split('\n\n')
     
 #     # Process the first section (name, telephone, address, email)
-#     pdf.set_font("DejaVu", 'B', 11)  # Set to bold, same size as body text
+#     pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
 #     first_section_lines = sections[0].split('\n')
-#     # Remove "Email:", "Address:", and "Phone:" from the header lines
-#     header_info = " | ".join([line.split(": ", 1)[-1] for line in first_section_lines])
+#     # Remove "Email:", "Address:", and "Phone:" from the header lines and join without vertical line
+#     header_info = "  ".join([line.split(": ", 1)[-1] for line in first_section_lines])
     
 #     # Center the header between left and right margins
 #     header_width = pdf.get_string_width(header_info)
 #     if header_width > effective_page_width:
 #         # If header is too wide, reduce font size
-#         font_size = 11
-#         while header_width > effective_page_width and font_size > 8:
+#         font_size = 12
+#         while header_width > effective_page_width and font_size > 9:
 #             font_size -= 0.5
 #             pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
 #             header_width = pdf.get_string_width(header_info)
@@ -288,14 +292,9 @@ def create_pdf(content, filename):
 #             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
 #             col_width = effective_page_width / 2
             
-#             # Adjust the position of the left column header
-#             left_column_x = pdf.l_margin
-#             pdf.set_xy(left_column_x, pdf.get_y())
-#             pdf.multi_cell_aligned(col_width - 2, 5, "Skills & Experience", align='L')
-            
-#             # Keep the right column header as is
-#             pdf.set_xy(pdf.l_margin + col_width, pdf.get_y() - 5)
-#             pdf.multi_cell_aligned(col_width, 5, "Job Requirements", align='L')
+#             # Write both headers on the same line
+#             pdf.cell(col_width, 5, "Skills & Experience", align='L', border=0)
+#             pdf.cell(col_width, 5, "Job Requirements", align='L', border=0, ln=True)
 #             pdf.ln(2)
             
 #             pdf.set_font("DejaVu", '', 11)  # Reset to regular font
@@ -306,7 +305,7 @@ def create_pdf(content, filename):
 #             for line in lines:
 #                 if '|' in line:
 #                     left, right = line.split('|')
-#                     pdf.set_xy(left_column_x, max_y)
+#                     pdf.set_xy(pdf.l_margin, max_y)
 #                     pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Unicode bullet point
 #                     new_y = pdf.get_y()
                     
@@ -315,7 +314,7 @@ def create_pdf(content, filename):
                     
 #                     max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
 #                 else:
-#                     pdf.set_xy(left_column_x, max_y)
+#                     pdf.set_xy(pdf.l_margin, max_y)
 #                     pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
 #                     max_y = pdf.get_y() + 2
             
@@ -332,88 +331,7 @@ def create_pdf(content, filename):
 #             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
 #             pdf.ln(3)
 #     pdf.output(filename)
-       
-        
-#     def multi_cell_aligned(self, w, h, txt, border=0, align='J', fill=False, ln=1):
-#         # Custom method to create a multi-cell with specified alignment
-#         self.multi_cell(w, h, txt, border, align, fill)
-#         if ln == 1:
-#             self.ln(h)
-#         elif ln == 2:
-#             self.ln(2*h)
-    
-# def create_pdf(content, filename):
-#     pdf = PDF(format='Letter')
-#     pdf.add_page()
-    
-#     # Add a Unicode font
-#     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
-    
-#     # Set margins (left, top, right) in millimeters
-#     pdf.set_margins(25, 20, 20)
-    
-#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
-    
-#     # Calculate effective page width (accounting for margins)
-#     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
-    
-#     # Split content into sections
-#     sections = content.split('\n\n')
-    
-#     # Process the first section (name, telephone, address, email)
-#     pdf.set_font("DejaVu", '', 12)
-#     first_section_lines = sections[0].split('\n')
-#     header_info = " | ".join(first_section_lines)  # Combine all information on one line
-    
-#     # Center the header by setting x position
-#     header_width = pdf.get_string_width(header_info)
-#     pdf.set_x((pdf.w - header_width) / 2)
-    
-#     pdf.cell(header_width, 6, header_info, align='C', ln=True)
-    
-#     # Add extra spacing after the header
-#     pdf.ln(10)
-    
-#     # Add a line after the header
-#     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-#     pdf.ln(3)
-    
-#     # Process the rest of the sections
-#     pdf.set_font("DejaVu", '', 11)
-#     for i, section in enumerate(sections[1:], 1):
-#         if "SKILLS & EXPERIENCE" in section:
-#             pdf.set_font("DejaVu", '', 11)
-#             col_width = effective_page_width / 2
-            
-#             # Adjust the position of the left column header
-#             left_column_x = pdf.l_margin
-#             pdf.set_xy(left_column_x, pdf.get_y())
-#             pdf.multi_cell_aligned(col_width - 2, 5, "Skills & Experience", align='L')
-            
-#             # Keep the right column header as is
-#             pdf.set_xy(pdf.l_margin + col_width, pdf.get_y() - 5)
-#             pdf.multi_cell_aligned(col_width, 5, "Job Requirements", align='L')
-#             pdf.ln(2)
-            
-#             pdf.set_font("DejaVu", '', 11)  # Increased font size to match other text
-            
-#             lines = section.split('\n')[1:]  # Skip the header line
-            
-#             max_y = pdf.get_y()
-#             for line in lines:
-#                 if '|' in line:
-#                     left, right = line.split('|')
-#                     pdf.set_xy(left_column_x, max_y)
-#                     pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Unicode bullet point
-#                     new_y = pdf.get_y()
-                    
-#                     pdf.set_xy(pdf.l_margin + col_width, max_y)
-#                     pdf.multi_cell(col_width - 2, 5, "• " + right.strip(), align='L')  # Unicode bullet point
-                    
-#                     max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
-#                 else:
-#                     pdf.set_xy(left_column_x, max_y)
-#                     pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
+
 #                     max_y = pdf.get_y() + 2
             
 #             pdf.set_y(max_y)
