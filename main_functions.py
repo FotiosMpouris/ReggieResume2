@@ -194,11 +194,11 @@ def create_pdf(content, filename):
                 if '|' in line:
                     left, right = line.split('|')
                     pdf.set_xy(left_column_x, max_y)
-                    pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Added bullet point
+                    pdf.multi_cell(col_width - 2, 5, "- " + left.strip(), align='L')  # Changed bullet to hyphen
                     new_y = pdf.get_y()
                     
                     pdf.set_xy(pdf.l_margin + col_width, max_y)
-                    pdf.multi_cell(col_width - 2, 5, "• " + right.strip(), align='L')  # Added bullet point
+                    pdf.multi_cell(col_width - 2, 5, "- " + right.strip(), align='L')  # Changed bullet to hyphen
                     
                     max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
                 else:
@@ -217,6 +217,7 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
+
 
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
