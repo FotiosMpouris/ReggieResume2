@@ -160,15 +160,16 @@ def create_pdf(content, filename):
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    pdf.set_font("DejaVu", 'B', 12)  # Set to bold
+    pdf.set_font("DejaVu", 'B', 11)  # Set to bold, same size as body text
     first_section_lines = sections[0].split('\n')
-    header_info = " | ".join(first_section_lines)  # Combine all information on one line
+    # Remove "Email" from the header
+    header_info = " | ".join([line for line in first_section_lines if not line.startswith("Email:")])
     
     # Center the header between left and right margins
     header_width = pdf.get_string_width(header_info)
     if header_width > effective_page_width:
         # If header is too wide, reduce font size
-        font_size = 12
+        font_size = 11
         while header_width > effective_page_width and font_size > 8:
             font_size -= 0.5
             pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
