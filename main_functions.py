@@ -158,14 +158,13 @@ def create_pdf(content, filename):
     # Process the first section (name, telephone, address, email)
     pdf.set_font("Helvetica", 'B', size=12)
     first_section_lines = sections[0].split('\n')
-    user_name = first_section_lines[0]  # Assuming the first line is the user's name
-    for line in first_section_lines:
-        pdf.cell(effective_page_width, 6, line, align='C', ln=True)
+    header_info = " | ".join(first_section_lines)  # Combine all information on one line
+    pdf.cell(effective_page_width, 6, header_info, align='C', ln=True)
     
-    # Add extra spacing after the first section
+    # Add extra spacing after the header
     pdf.ln(10)
     
-    # Add a line after the first section
+    # Add a line after the header
     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
     pdf.ln(3)
     
@@ -179,14 +178,14 @@ def create_pdf(content, filename):
             # Adjust the position of the left column header
             left_column_x = pdf.l_margin
             pdf.set_xy(left_column_x, pdf.get_y())
-            pdf.multi_cell_aligned(col_width - 2, 5, f"{user_name}'s Skills & Experience", align='L')
+            pdf.multi_cell_aligned(col_width - 2, 5, "Skills & Experience", align='L')
             
             # Keep the right column header as is
             pdf.set_xy(pdf.l_margin + col_width, pdf.get_y() - 5)
             pdf.multi_cell_aligned(col_width, 5, "Job Requirements", align='L')
             pdf.ln(2)
             
-            pdf.set_font("Helvetica", size=9)  # Increased font size
+            pdf.set_font("Helvetica", size=11)  # Increased font size to match other text
             
             lines = section.split('\n')[1:]  # Skip the header line
             
@@ -195,11 +194,11 @@ def create_pdf(content, filename):
                 if '|' in line:
                     left, right = line.split('|')
                     pdf.set_xy(left_column_x, max_y)
-                    pdf.multi_cell(col_width - 2, 5, left.strip(), align='L')
+                    pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Added bullet point
                     new_y = pdf.get_y()
                     
                     pdf.set_xy(pdf.l_margin + col_width, max_y)
-                    pdf.multi_cell(col_width - 2, 5, right.strip(), align='L')
+                    pdf.multi_cell(col_width - 2, 5, "• " + right.strip(), align='L')  # Added bullet point
                     
                     max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
                 else:
@@ -218,78 +217,6 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
-
-# def create_pdf(content, filename):
-#     pdf = PDF(format='Letter')
-#     pdf.add_page()
-    
-#     # Set margins (left, top, right) in millimeters
-#     pdf.set_margins(20, 15, 15)
-    
-#     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
-    
-#     # Calculate effective page width (accounting for margins)
-#     effective_page_width = pdf.w - pdf.l_margin - pdf.r_margin
-    
-#     # Split content into sections
-#     sections = content.split('\n\n')
-    
-#     # Process the first section (name, telephone, address, email)
-#     pdf.set_font("Helvetica", 'B', size=12)
-#     first_section_lines = sections[0].split('\n')
-#     user_name = first_section_lines[0]  # Assuming the first line is the user's name
-#     for line in first_section_lines:
-#         pdf.cell(effective_page_width, 6, line, align='L', ln=True)
-    
-#     # Add extra spacing after the first section
-#     pdf.ln(10)
-    
-#     # Add a line after the first section
-#     pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-#     pdf.ln(3)
-    
-#     # Process the rest of the sections
-#     pdf.set_font("Helvetica", size=11)
-#     for i, section in enumerate(sections[1:], 1):
-#         if "SKILLS & EXPERIENCE" in section:
-#             pdf.set_font("Helvetica", 'B', size=11)
-#             col_width = effective_page_width / 2
-            
-#             # Adjust the position of the left column header
-#             left_column_x = pdf.l_margin + 2  # Add a small offset to move it slightly right
-#             pdf.set_x(left_column_x)
-#             pdf.cell(col_width - 2, 5, f"{user_name}'s Skills & Experience", ln=0)
-            
-#             # Keep the right column header as is
-#             pdf.cell(col_width, 5, "Job Requirements", ln=1)
-#             pdf.ln(2)
-            
-#             pdf.set_font("Helvetica", size=6)
-            
-#             lines = section.split('\n')[1:]  # Skip the header line
-            
-#             for line in lines:
-#                 if '|' in line:
-#                     left, right = line.split('|')
-#                     pdf.set_x(left_column_x)
-#                     pdf.cell(col_width - 2, 4, left.strip(), ln=0)
-#                     pdf.set_x(pdf.l_margin + col_width)
-#                     pdf.cell(col_width, 4, right.strip(), ln=1)
-#                 else:
-#                     pdf.set_x(left_column_x)
-#                     pdf.cell(effective_page_width - 2, 4, line, ln=1)
-            
-#             pdf.set_font("Helvetica", size=11)
-#         else:
-#             pdf.multi_cell(effective_page_width, 5, section, align='J')
-        
-#         if i < len(sections) - 1:
-#             pdf.ln(3)
-#             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
-#             pdf.ln(3)
-
-#     pdf.output(filename)
-
 
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
