@@ -139,17 +139,16 @@ class PDF(FPDF):
             self.ln(h)
         elif ln == 2:
             self.ln(2*h)
-    
+
 def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Add Unicode fonts (regular and bold)
+    # Add a Unicode font
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
-    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    # Set margins (left, top, right) in millimeters - reduced left and right margins
-    pdf.set_margins(15, 20, 15)
+    # Set margins (left, top, right) in millimeters
+    pdf.set_margins(25, 20, 20)
     
     pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
@@ -160,26 +159,24 @@ def create_pdf(content, filename):
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    pdf.set_font("DejaVu", 'B', 12)  # Set font to bold
+    pdf.set_font("DejaVu", '', 12)
     first_section_lines = sections[0].split('\n')
+    header_info = " | ".join(first_section_lines)  # Combine all information on one line
     
-    # Calculate the maximum width available for each line
-    max_line_width = effective_page_width
+    # Center the header between left and right margins
+    header_width = pdf.get_string_width(header_info)
+    if header_width > effective_page_width:
+        # If header is too wide, reduce font size
+        font_size = 12
+        while header_width > effective_page_width and font_size > 8:
+            font_size -= 0.5
+            pdf.set_font("DejaVu", '', font_size)
+            header_width = pdf.get_string_width(header_info)
     
-    for line in first_section_lines:
-        # Center each line individually
-        line_width = pdf.get_string_width(line)
-        if line_width > max_line_width:
-            # If the line is too long, reduce the font size
-            current_font_size = 12
-            while line_width > max_line_width and current_font_size > 8:
-                current_font_size -= 0.5
-                pdf.set_font("DejaVu", 'B', current_font_size)
-                line_width = pdf.get_string_width(line)
-        
-        # Set x position to center the line
-        pdf.set_x((pdf.w - line_width) / 2)
-        pdf.cell(line_width, 6, line, align='C', ln=True)
+    x_position = pdf.l_margin + (effective_page_width - header_width) / 2
+    pdf.set_x(x_position)
+    
+    pdf.cell(header_width, 6, header_info, align='C', ln=True)
     
     # Add extra spacing after the header
     pdf.ln(10)
@@ -192,7 +189,7 @@ def create_pdf(content, filename):
     pdf.set_font("DejaVu", '', 11)
     for i, section in enumerate(sections[1:], 1):
         if "SKILLS & EXPERIENCE" in section:
-            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+            pdf.set_font("DejaVu", '', 11)
             col_width = effective_page_width / 2
             
             # Adjust the position of the left column header
@@ -205,7 +202,7 @@ def create_pdf(content, filename):
             pdf.multi_cell_aligned(col_width, 5, "Job Requirements", align='L')
             pdf.ln(2)
             
-            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+            pdf.set_font("DejaVu", '', 11)  # Increased font size to match other text
             
             lines = section.split('\n')[1:]  # Skip the header line
             
@@ -229,17 +226,14 @@ def create_pdf(content, filename):
             pdf.set_y(max_y)
             pdf.set_font("DejaVu", '', 11)
         else:
-            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-            pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
-            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-            pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
+            pdf.multi_cell(effective_page_width, 5, section, align='J')
         
         if i < len(sections) - 1:
             pdf.ln(3)
             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
             pdf.ln(3)
-
     pdf.output(filename)
+    
         
 #     def multi_cell_aligned(self, w, h, txt, border=0, align='J', fill=False, ln=1):
 #         # Custom method to create a multi-cell with specified alignment
