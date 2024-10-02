@@ -144,8 +144,9 @@ def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Add a Unicode font
+    # Add Unicode fonts (regular and bold)
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
     # Set margins (left, top, right) in millimeters - reduced left and right margins
     pdf.set_margins(15, 20, 15)
@@ -159,7 +160,7 @@ def create_pdf(content, filename):
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    pdf.set_font("DejaVu", '', 12)  # Use regular font, but larger size for emphasis
+    pdf.set_font("DejaVu", 'B', 12)  # Set font to bold
     first_section_lines = sections[0].split('\n')
     user_name = first_section_lines[0].split()[0]  # Get the first name
     header_info = " | ".join(first_section_lines[1:])  # Combine all information except name
@@ -182,7 +183,7 @@ def create_pdf(content, filename):
     pdf.set_font("DejaVu", '', 11)
     for i, section in enumerate(sections[1:], 1):
         if "SKILLS & EXPERIENCE" in section:
-            pdf.set_font("DejaVu", '', 11)  # Use regular font for section headers
+            pdf.set_font("DejaVu", 'B', 11)
             col_width = effective_page_width / 2
             
             # Adjust the position of the left column header
@@ -227,6 +228,7 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
+
     
 # def create_pdf(content, filename):
 #     pdf = PDF(format='Letter')
