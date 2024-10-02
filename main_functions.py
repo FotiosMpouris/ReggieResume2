@@ -162,8 +162,8 @@ def create_pdf(content, filename):
     # Process the first section (name, telephone, address, email)
     pdf.set_font("DejaVu", 'B', 11)  # Set to bold, same size as body text
     first_section_lines = sections[0].split('\n')
-    # Remove "Email" from the header
-    header_info = " | ".join([line for line in first_section_lines if not line.startswith("Email:")])
+    # Remove "Email:", "Address:", and "Phone:" from the header lines
+    header_info = " | ".join([line.split(": ", 1)[-1] for line in first_section_lines])
     
     # Center the header between left and right margins
     header_width = pdf.get_string_width(header_info)
@@ -238,7 +238,7 @@ def create_pdf(content, filename):
             pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
             pdf.ln(3)
     pdf.output(filename)
-    
+       
         
 #     def multi_cell_aligned(self, w, h, txt, border=0, align='J', fill=False, ln=1):
 #         # Custom method to create a multi-cell with specified alignment
