@@ -144,8 +144,9 @@ def create_pdf(content, filename):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
-    # Add a Unicode font
+    # Add Unicode fonts (regular and bold)
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
     # Set margins (left, top, right) in millimeters
     pdf.set_margins(25, 20, 20)
@@ -159,7 +160,7 @@ def create_pdf(content, filename):
     sections = content.split('\n\n')
     
     # Process the first section (name, telephone, address, email)
-    pdf.set_font("DejaVu", '', 12)
+    pdf.set_font("DejaVu", 'B', 12)  # Set to bold
     first_section_lines = sections[0].split('\n')
     header_info = " | ".join(first_section_lines)  # Combine all information on one line
     
@@ -170,7 +171,7 @@ def create_pdf(content, filename):
         font_size = 12
         while header_width > effective_page_width and font_size > 8:
             font_size -= 0.5
-            pdf.set_font("DejaVu", '', font_size)
+            pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
             header_width = pdf.get_string_width(header_info)
     
     x_position = pdf.l_margin + (effective_page_width - header_width) / 2
@@ -189,7 +190,7 @@ def create_pdf(content, filename):
     pdf.set_font("DejaVu", '', 11)
     for i, section in enumerate(sections[1:], 1):
         if "SKILLS & EXPERIENCE" in section:
-            pdf.set_font("DejaVu", '', 11)
+            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
             col_width = effective_page_width / 2
             
             # Adjust the position of the left column header
@@ -202,7 +203,7 @@ def create_pdf(content, filename):
             pdf.multi_cell_aligned(col_width, 5, "Job Requirements", align='L')
             pdf.ln(2)
             
-            pdf.set_font("DejaVu", '', 11)  # Increased font size to match other text
+            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
             
             lines = section.split('\n')[1:]  # Skip the header line
             
@@ -226,7 +227,10 @@ def create_pdf(content, filename):
             pdf.set_y(max_y)
             pdf.set_font("DejaVu", '', 11)
         else:
-            pdf.multi_cell(effective_page_width, 5, section, align='J')
+            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+            pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
+            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+            pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
         
         if i < len(sections) - 1:
             pdf.ln(3)
