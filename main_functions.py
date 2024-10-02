@@ -162,13 +162,24 @@ def create_pdf(content, filename):
     # Process the first section (name, telephone, address, email)
     pdf.set_font("DejaVu", 'B', 12)  # Set font to bold
     first_section_lines = sections[0].split('\n')
-    header_info = " | ".join(first_section_lines)  # Combine all information on one line
     
-    # Center the header by setting x position
-    header_width = pdf.get_string_width(header_info)
-    pdf.set_x((pdf.w - header_width) / 2)
+    # Calculate the maximum width available for each line
+    max_line_width = effective_page_width
     
-    pdf.cell(header_width, 6, header_info, align='C', ln=True)
+    for line in first_section_lines:
+        # Center each line individually
+        line_width = pdf.get_string_width(line)
+        if line_width > max_line_width:
+            # If the line is too long, reduce the font size
+            current_font_size = 12
+            while line_width > max_line_width and current_font_size > 8:
+                current_font_size -= 0.5
+                pdf.set_font("DejaVu", 'B', current_font_size)
+                line_width = pdf.get_string_width(line)
+        
+        # Set x position to center the line
+        pdf.set_x((pdf.w - line_width) / 2)
+        pdf.cell(line_width, 6, line, align='C', ln=True)
     
     # Add extra spacing after the header
     pdf.ln(10)
@@ -229,7 +240,6 @@ def create_pdf(content, filename):
             pdf.ln(3)
 
     pdf.output(filename)
-
         
 #     def multi_cell_aligned(self, w, h, txt, border=0, align='J', fill=False, ln=1):
 #         # Custom method to create a multi-cell with specified alignment
