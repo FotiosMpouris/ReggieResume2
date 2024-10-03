@@ -248,6 +248,17 @@ def create_pdf(content, filename):
             
             pdf.set_y(max_y)
             pdf.set_font("DejaVu", '', 11)
+        elif "RELEVANT WORK EXPERIENCE" in section:
+            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+            pdf.cell(0, 5, "RELEVANT WORK EXPERIENCE", ln=True)  # Write section header
+            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+            
+            # Split the work experience into paragraphs
+            work_exp_paragraphs = section.split('\n\n')[1:]  # Skip the header
+            
+            for paragraph in work_exp_paragraphs:
+                pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
+                pdf.ln(3)  # Add a small space between paragraphs
         else:
             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
             pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
