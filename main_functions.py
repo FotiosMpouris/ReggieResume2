@@ -97,9 +97,7 @@ RELEVANT WORK EXPERIENCE
 import openai
 from datetime import date
 
-def generate_cover_letter(resume, job_description, full_name, telephone, email):
-    today = date.today().strftime("%B %d, %Y")
-    
+def generate_cover_letter(resume, job_description):
     system_message = """
     You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume and the job description provided. The cover letter should:
     1. Be professionally formatted with appropriate salutations and closings
@@ -107,8 +105,6 @@ def generate_cover_letter(resume, job_description, full_name, telephone, email):
     3. Show enthusiasm for the position and company
     4. Be concise, typically not exceeding one page
     5. Encourage the employer to review the attached resume and consider the candidate for an interview
-    6. Start with "Dear Hiring Manager," on a new line after the date
-    7. Do not include the candidate's contact information or date in the body of the letter
     """
 
     user_message = f"""
@@ -119,18 +115,6 @@ def generate_cover_letter(resume, job_description, full_name, telephone, email):
 
     Job Description:
     {job_description}
-    
-    Use the following format for the cover letter:
-    [Full Name]
-    [Telephone]
-    [Email]
-
-    [Today's Date]                                        Dear Hiring Manager,
-
-    [Cover letter content]
-
-    Sincerely,
-    [Full Name]
     """
 
     response = openai.ChatCompletion.create(
@@ -141,42 +125,7 @@ def generate_cover_letter(resume, job_description, full_name, telephone, email):
         ]
     )
 
-    cover_letter_content = response.choices[0].message.content
-
-    # Format the cover letter with the provided information
-    formatted_cover_letter = f"{full_name}\n{telephone}\n{email}\n\n{today.ljust(40)}Dear Hiring Manager,\n\n{cover_letter_content}"
-
-    return formatted_cover_letter
-
-# def generate_cover_letter(resume, job_description):
-#     system_message = """
-#     You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume and the job description provided. The cover letter should:
-#     1. Be professionally formatted with appropriate salutations and closings
-#     2. Highlight the candidate's most relevant skills and experiences for the specific job
-#     3. Show enthusiasm for the position and company
-#     4. Be concise, typically not exceeding one page
-#     5. Encourage the employer to review the attached resume and consider the candidate for an interview
-#     """
-
-#     user_message = f"""
-#     Please write a cover letter based on the following resume and job description:
-
-#     Resume:
-#     {resume}
-
-#     Job Description:
-#     {job_description}
-#     """
-
-#     response = openai.ChatCompletion.create(
-#         model="gpt-4",
-#         messages=[
-#             {"role": "system", "content": system_message},
-#             {"role": "user", "content": user_message}
-#         ]
-#     )
-
-#     return response.choices[0].message.content
+    return response.choices[0].message.content
 
 class PDF(FPDF):
     def header(self):
