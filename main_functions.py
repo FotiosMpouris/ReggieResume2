@@ -142,7 +142,8 @@ class PDF(FPDF):
             self.ln(2*h)
 
 def create_pdf(content, filename):
-    pdf = PDF(format='Letter')
+    pdf = PDF(format=(612, 792))  # 8.5 x 11 inches in points
+    #pdf = PDF(format='Letter')
     pdf.add_page()
     
     # Add Unicode fonts (regular and bold)
