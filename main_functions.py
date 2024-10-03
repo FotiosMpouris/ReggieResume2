@@ -160,14 +160,13 @@ def create_pdf(content, filename):
     # Calculate effective page width (accounting for margins)
     effective_page_width = pdf.w - left_margin - right_margin
     
-    # Split content into sections
-    sections = content.split('\n\n')
+    # Split content into main sections
+    main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
     
-    # Process the first section (name, telephone, address, email)
+    # Process the header section (name, telephone, address, email)
     pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
-    first_section_lines = sections[0].split('\n')
-    # Remove "Email:", "Address:", and "Phone:" from the header lines and join without vertical line
-    header_info = "  ".join([line.split(": ", 1)[-1] for line in first_section_lines])
+    header_lines = main_sections[0].split('\n')
+    header_info = "  ".join([line.split(": ", 1)[-1] for line in header_lines])
     
     # Extract first name from the header
     first_name = header_info.split()[0]
@@ -197,24 +196,17 @@ def create_pdf(content, filename):
     
     # Process the rest of the sections
     pdf.set_font("DejaVu", '', 11)
-    for i, section in enumerate(sections[1:], 1):
-        if "SKILLS & EXPERIENCE" in section:
+    for i, section in enumerate(main_sections[1:], 1):
+        if section.startswith("SKILLS & EXPERIENCE"):
             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
             col_width = effective_page_width / 2
             
             # Extract company name from the job description
-            company_name = ""
-            job_description = sections[-1]  # Assuming the job description is the last section
-            for line in job_description.split('\n'):
-                if ":" in line:
-                    key, value = line.split(":", 1)
-                    if key.strip().lower() == "company":
-                        company_name = value.strip()
-                        break
-            
-            # If company name is not found, use a default
-            if not company_name:
-                company_name = "Company"
+            company_name = "Company"  # Default value
+            for line in content.split('\n'):
+                if line.lower().startswith("company:"):
+                    company_name = line.split(":", 1)[1].strip()
+                    break
             
             # Write both headers on the same line with personalization
             pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0)
@@ -247,30 +239,18 @@ def create_pdf(content, filename):
                     max_y = pdf.get_y() + 2
             
             pdf.set_y(max_y)
-            pdf.set_font("DejaVu", '', 11)
-        elif "RELEVANT WORK EXPERIENCE" in section:
-            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-            pdf.cell(0, 5, "RELEVANT WORK EXPERIENCE", ln=True)  # Write section header
-            pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-            
-            # Split the work experience into paragraphs
-            work_exp_paragraphs = section.split('\n\n')[1:]  # Skip the header
-            
-            for paragraph in work_exp_paragraphs:
-                pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
-                pdf.ln(3)  # Add a small space between paragraphs
         else:
             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
             pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
             pdf.set_font("DejaVu", '', 11)  # Reset to regular font
             pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
         
-        if i < len(sections) - 1:
+        if i < len(main_sections) - 1:
             pdf.ln(3)
             pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
             pdf.ln(3)
+    
     pdf.output(filename)
-
 # import openai
 # import re
 # from fpdf import FPDF
