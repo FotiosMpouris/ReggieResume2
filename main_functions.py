@@ -142,43 +142,23 @@ class PDF(FPDF):
             self.ln(2*h)
 
 def create_pdf(content, filename):
-    pdf = FPDF(unit='in', format=(8.5, 11))  # Explicitly set to letter size (8.5 x 11 inches)
+    pdf = PDF(format='Letter')
     pdf.add_page()
     
     # Add Unicode fonts (regular and bold)
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
     pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    # Set margins (left, top, right) in inches
-    left_margin = 0.75  # ~19mm
-    right_margin = 0.75  # ~19mm
-    top_margin = 0.75  # ~19mm
+    # Set margins (left, top, right) in millimeters - adjusted for symmetry
+    left_margin = 20
+    right_margin = 20
+    top_margin = 20
     pdf.set_margins(left_margin, top_margin, right_margin)
     
-    pdf.set_auto_page_break(auto=True, margin=0.75)  # Bottom margin
+    pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
-    effective_page_width = 8.5 - left_margin - right_margin
-    
-    # Add a check to print the actual page dimensions
-    print(f"Page width: {pdf.w} inches, Page height: {pdf.h} inches")
-    # pdf = PDF(format='Letter')
-    # pdf.add_page()
-    
-    # # Add Unicode fonts (regular and bold)
-    # pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
-    # pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
-    
-    # # Set margins (left, top, right) in millimeters - adjusted for symmetry
-    # left_margin = 20
-    # right_margin = 20
-    # top_margin = 20
-    # pdf.set_margins(left_margin, top_margin, right_margin)
-    
-    # pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
-    
-    # # Calculate effective page width (accounting for margins)
-    # effective_page_width = pdf.w - left_margin - right_margin
+    effective_page_width = pdf.w - left_margin - right_margin
     
     # Split content into main sections
     main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
