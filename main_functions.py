@@ -9,7 +9,7 @@ def analyze_resume_and_job(resume, job_description):
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
     3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 6 key points for each. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
-    5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail. 1-3 Sentences each.
+    5. Extract and summarize at least three relevant work experiences for this job, writing 1-2 sentences each, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     """
 
     user_message = f"""
