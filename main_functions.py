@@ -9,7 +9,7 @@ def analyze_resume_and_job(resume, job_description):
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
     3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 6 key points for each. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
-    5. Extract and summarize at least four relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
+    5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail. 1-3 Sentences each.
     """
 
     user_message = f"""
@@ -155,7 +155,7 @@ def create_pdf(content, filename):
     top_margin = 20
     pdf.set_margins(left_margin, top_margin, right_margin)
     
-    pdf.set_auto_page_break(auto=True, margin=15)  # Bottom margin
+    pdf.set_auto_page_break(auto=True, margin=20)  # Bottom margin
     
     # Calculate effective page width (accounting for margins)
     effective_page_width = pdf.w - left_margin - right_margin
