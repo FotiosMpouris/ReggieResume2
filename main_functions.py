@@ -142,18 +142,43 @@ class PDF(FPDF):
             self.ln(2*h)
 
 def create_pdf(content, filename):
+    pdf = PDF(format='Letter')
+    pdf.add_page()
+    
+    # Add Unicode fonts (regular and bold)
+    pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
+    
     if filename == "cover_letter.pdf":
-        pdf = format_cover_letter_for_pdf(content)
+        # Cover letter specific formatting
+        left_margin = 25.4  # 1 inch
+        right_margin = 25.4  # 1 inch
+        top_margin = 25.4  # 1 inch
+        pdf.set_margins(left_margin, top_margin, right_margin)
+        
+        pdf.set_auto_page_break(auto=True, margin=25.4)  # 1 inch bottom margin
+        
+        # Calculate effective page width (accounting for margins)
+        effective_page_width = pdf.w - left_margin - right_margin
+        
+        # Set font for body text
+        pdf.set_font("DejaVu", '', 11)
+        
+        # Split cover letter into paragraphs
+        paragraphs = content.split('\n\n')
+        
+        for i, paragraph in enumerate(paragraphs):
+            if i == 0:  # First paragraph (typically the date)
+                pdf.cell(0, 5, paragraph, ln=True)
+                pdf.ln(5)
+            elif i == 1:  # Second paragraph (typically the salutation)
+                pdf.cell(0, 5, paragraph, ln=True)
+                pdf.ln(5)
+            else:
+                pdf.multi_cell(effective_page_width, 5, paragraph, align='J')
+                pdf.ln(5)
     else:
         # Existing resume PDF generation code
-        pdf = PDF(format='Letter')
-        pdf.add_page()
-        
-        # Add Unicode fonts (regular and bold)
-        pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
-        pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
-        
-        # Set margins (left, top, right) in millimeters - adjusted for symmetry
         left_margin = 20
         right_margin = 20
         top_margin = 20
