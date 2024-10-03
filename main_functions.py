@@ -142,14 +142,14 @@ class PDF(FPDF):
             self.ln(2*h)
 
 def create_pdf(content, filename):
-    pdf = FPDF(format='Letter')  # Explicitly set to Letter format (8.5 x 11 inches)
+    pdf = FPDF(format='letter')  # Explicitly set to letter format (8.5 x 11 inches)
     pdf.add_page()
     
     # Add Unicode fonts (regular and bold)
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
     pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    # Set margins (left, top, right) in millimeters - adjusted for symmetry
+    # Set margins (left, top, right) in millimeters
     left_margin = 20
     right_margin = 20
     top_margin = 20
@@ -243,14 +243,8 @@ def create_pdf(content, filename):
             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
             pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
             pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-            
-            # Split the section content into paragraphs
-            paragraphs = section.split('\n\n')[1:]  # Skip the header
-            
-            for j, paragraph in enumerate(paragraphs):
-                pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
-                if j < len(paragraphs) - 1:  # If it's not the last paragraph
-                    pdf.ln(3)  # Add a small space between paragraphs
+            content = '\n'.join(section.split('\n')[1:])  # Get all content after the header
+            pdf.multi_cell(effective_page_width, 5, content, align='J')
         
         if i < len(main_sections) - 1:
             pdf.ln(3)
