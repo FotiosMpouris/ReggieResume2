@@ -120,7 +120,7 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     4. Show enthusiasm for the position and company
     5. Be concise, typically not exceeding one page
     6. Encourage the employer to review the attached resume and consider the candidate for an interview
-    7. Do not include the date or salutation in the body of the letter
+    7. Do not include the date, salutation, or contact information in the body of the letter
     """
 
     user_message = f"""
@@ -140,7 +140,7 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     Job Description:
     {job_description}
 
-    Use the following format for the cover letter content (exclude the date and salutation):
+    Use the following format for the cover letter content (exclude the date, salutation, and contact information):
     [Cover letter content]
 
     Sincerely,
@@ -158,9 +158,62 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     cover_letter_content = response.choices[0].message.content
     
     # Format the cover letter with the correct header, date, and salutation
-    formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n{cover_letter_info['Address']}\n\n{today}\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}"
+    formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Address']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n\n{today}\n\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}"
     
     return formatted_cover_letter
+
+# def generate_cover_letter(resume, job_description, cover_letter_info):
+#     today = date.today().strftime("%B %d, %Y")
+    
+#     system_message = """
+#     You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume, the job description provided, and the specific candidate information given. The cover letter should:
+#     1. Use the exact provided full name, phone number, email, and address for the candidate
+#     2. Use the exact provided company name in the greeting (e.g., "Dear [Company Name] Hiring Team,")
+#     3. Highlight the candidate's most relevant skills and experiences for the specific job
+#     4. Show enthusiasm for the position and company
+#     5. Be concise, typically not exceeding one page
+#     6. Encourage the employer to review the attached resume and consider the candidate for an interview
+#     7. Do not include the date or salutation in the body of the letter
+#     """
+
+#     user_message = f"""
+#     Please write a cover letter based on the following information:
+
+#     Candidate Information:
+#     Full Name: {cover_letter_info['Full Name']}
+#     Phone: {cover_letter_info['Phone']}
+#     Email: {cover_letter_info['Email']}
+#     Address: {cover_letter_info['Address']}
+
+#     Company: {cover_letter_info['Company Name']}
+
+#     Resume:
+#     {resume}
+
+#     Job Description:
+#     {job_description}
+
+#     Use the following format for the cover letter content (exclude the date and salutation):
+#     [Cover letter content]
+
+#     Sincerely,
+#     [Full Name]
+#     """
+
+#     response = openai.ChatCompletion.create(
+#         model="gpt-4",
+#         messages=[
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message}
+#         ]
+#     )
+
+#     cover_letter_content = response.choices[0].message.content
+    
+#     # Format the cover letter with the correct header, date, and salutation
+#     formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n{cover_letter_info['Address']}\n\n{today}\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}"
+    
+#     return formatted_cover_letter
 
 class PDF(FPDF):
     def header(self):
@@ -186,7 +239,7 @@ def create_pdf(content, filename):
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
     pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    if filename == "cover_letter.pdf":
+      if filename == "cover_letter.pdf":
         # Cover letter specific formatting
         left_margin = 25.4  # 1 inch
         right_margin = 25.4  # 1 inch
@@ -207,7 +260,7 @@ def create_pdf(content, filename):
         # Process contact information
         contact_info = paragraphs[0].split('\n')
         for line in contact_info:
-            pdf.cell(0, 5, line.strip(), ln=True)
+            pdf.cell(0, 5, line.strip(), ln=True, align='L')
         pdf.ln(5)
         
         # Process date and salutation
@@ -224,7 +277,46 @@ def create_pdf(content, filename):
         # Process the body of the letter
         for paragraph in paragraphs[2:]:
             pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
-            pdf.ln(5)
+            pdf.ln(5)  
+    # if filename == "cover_letter.pdf":
+    #     # Cover letter specific formatting
+    #     left_margin = 25.4  # 1 inch
+    #     right_margin = 25.4  # 1 inch
+    #     top_margin = 25.4  # 1 inch
+    #     pdf.set_margins(left_margin, top_margin, right_margin)
+        
+    #     pdf.set_auto_page_break(auto=True, margin=25.4)  # 1 inch bottom margin
+        
+    #     # Calculate effective page width (accounting for margins)
+    #     effective_page_width = pdf.w - left_margin - right_margin
+        
+    #     # Set font for body text
+    #     pdf.set_font("DejaVu", '', 11)
+        
+    #     # Split cover letter into paragraphs
+    #     paragraphs = content.split('\n\n')
+        
+    #     # Process contact information
+    #     contact_info = paragraphs[0].split('\n')
+    #     for line in contact_info:
+    #         pdf.cell(0, 5, line.strip(), ln=True)
+    #     pdf.ln(5)
+        
+    #     # Process date and salutation
+    #     if len(paragraphs) > 1:
+    #         date_salutation = paragraphs[1].split('\n')
+    #         if len(date_salutation) >= 2:
+    #             # Date on the right
+    #             pdf.cell(effective_page_width, 5, date_salutation[0].strip(), align='R', ln=True)
+    #             pdf.ln(5)
+    #             # Salutation on the left
+    #             pdf.cell(0, 5, date_salutation[1].strip(), ln=True)
+    #         pdf.ln(5)
+        
+    #     # Process the body of the letter
+    #     for paragraph in paragraphs[2:]:
+    #         pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
+    #         pdf.ln(5)
             
     else:
         # Existing resume PDF generation code
