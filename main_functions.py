@@ -236,7 +236,7 @@ def create_pdf(content, filename):
         top_margin = 25.4  # 1 inch
         pdf.set_margins(left_margin, top_margin, right_margin)
         
-        pdf.set_auto_page_break(auto=True, margin=19.4)  # 1 inch bottom margin
+        pdf.set_auto_page_break(auto=True, margin=10.4)  # 1 inch bottom margin
         
         # Calculate effective page width (accounting for margins)
         effective_page_width = pdf.w - left_margin - right_margin
