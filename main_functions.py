@@ -7,9 +7,11 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 5 key points for each. Include the company name from the job description before "Job Requirements".
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 6 key points for each. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
+    6. Extract the full name, address, email, and phone number for use in a cover letter.
+    7. Extract the company name from the job description for use in the cover letter greeting.
     """
 
     user_message = f"""
@@ -45,6 +47,13 @@ def analyze_resume_and_job(resume, job_description):
     [Summarized relevant work experience 2]
 
     [Summarized relevant work experience 3]
+
+    COVER LETTER INFO:
+    Full Name: [Extracted full name]
+    Address: [Extracted address]
+    Email: [Extracted email]
+    Phone: [Extracted phone number]
+    Company Name: [Extracted company name]
     """
 
     response = openai.ChatCompletion.create(
@@ -59,7 +68,7 @@ def analyze_resume_and_job(resume, job_description):
     return process_gpt_output(output)
 
 def process_gpt_output(output):
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:)', output)
     
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
@@ -71,7 +80,81 @@ def process_gpt_output(output):
     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
     
-    return header, summary, (your_skills, job_requirements), education, work_experience
+    cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
+    cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
+    
+    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
+
+# def analyze_resume_and_job(resume, job_description):
+#     system_message = """
+#     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
+#     1. A tailored header for the resume, including the candidate's name and key contact information.
+#     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
+#     3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 5 key points for each. Include the company name from the job description before "Job Requirements".
+#     4. Extract and summarize the candidate's education information.
+#     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
+#     """
+
+#     user_message = f"""
+#     Please analyze the following resume and job description:
+
+#     Resume:
+#     {resume}
+
+#     Job Description:
+#     {job_description}
+
+#     Provide your analysis in the following format:
+#     HEADER:
+#     [Tailored header here]
+
+#     SUMMARY:
+#     [Custom summary here]
+
+#     COMPARISON:
+#     [Your Skills & Experience]|[Company Name Job Requirements]
+#     Skill/Experience 1|Requirement 1
+#     Skill/Experience 2|Requirement 2
+#     Skill/Experience 3|Requirement 3
+#     Skill/Experience 4|Requirement 4
+#     Skill/Experience 5|Requirement 5
+
+#     EDUCATION:
+#     [Summarized education information]
+
+#     RELEVANT WORK EXPERIENCE:
+#     [Summarized relevant work experience 1]
+
+#     [Summarized relevant work experience 2]
+
+#     [Summarized relevant work experience 3]
+#     """
+
+#     response = openai.ChatCompletion.create(
+#         model="gpt-4",
+#         messages=[
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message}
+#         ]
+#     )
+
+#     output = response.choices[0].message.content
+#     return process_gpt_output(output)
+
+# def process_gpt_output(output):
+#     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:)', output)
+    
+#     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+#     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    
+#     comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+#     your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+#     job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    
+#     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+#     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    
+#     return header, summary, (your_skills, job_requirements), education, work_experience
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience):
     skills, requirements = skills_comparison
@@ -96,25 +179,48 @@ RELEVANT WORK EXPERIENCE
 
 import openai
 from datetime import date
-
-def generate_cover_letter(resume, job_description):
+def generate_cover_letter(resume, job_description, cover_letter_info):
+    today = date.today().strftime("%B %d, %Y")
+    
     system_message = """
-    You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume and the job description provided. The cover letter should:
-    1. Be professionally formatted with appropriate salutations and closings
-    2. Highlight the candidate's most relevant skills and experiences for the specific job
-    3. Show enthusiasm for the position and company
-    4. Be concise, typically not exceeding one page
-    5. Encourage the employer to review the attached resume and consider the candidate for an interview
+    You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume, the job description provided, and the specific candidate information given. The cover letter should:
+    1. Use the exact provided full name, phone number, email, and address for the candidate
+    2. Use the exact provided company name in the greeting (e.g., "Dear [Company Name] Hiring Team,")
+    3. Highlight the candidate's most relevant skills and experiences for the specific job
+    4. Show enthusiasm for the position and company
+    5. Be concise, typically not exceeding one page
+    6. Encourage the employer to review the attached resume and consider the candidate for an interview
     """
 
     user_message = f"""
-    Please write a cover letter based on the following resume and job description:
+    Please write a cover letter based on the following information:
+
+    Candidate Information:
+    Full Name: {cover_letter_info['Full Name']}
+    Phone: {cover_letter_info['Phone']}
+    Email: {cover_letter_info['Email']}
+    Address: {cover_letter_info['Address']}
+
+    Company: {cover_letter_info['Company Name']}
 
     Resume:
     {resume}
 
     Job Description:
     {job_description}
+
+    Use the following format for the cover letter:
+    [Full Name]
+    [Phone Number]
+    [Email]
+    [Address]
+
+    [Today's Date]                                        Dear [Company Name] Hiring Team,
+
+    [Cover letter content]
+
+    Sincerely,
+    [Full Name]
     """
 
     response = openai.ChatCompletion.create(
@@ -125,7 +231,45 @@ def generate_cover_letter(resume, job_description):
         ]
     )
 
-    return response.choices[0].message.content
+    cover_letter_content = response.choices[0].message.content
+    
+    # Ensure the correct information is at the top of the letter
+    header = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n{cover_letter_info['Address']}\n\n{today.ljust(40)}Dear {cover_letter_info['Company Name']} Hiring Team,\n\n"
+    
+    # Remove any potential duplicate header information from the AI-generated content
+    content_body = re.sub(r'^.*Dear.*Hiring Team,\s*', '', cover_letter_content, flags=re.DOTALL)
+    
+    formatted_cover_letter = header + content_body
+    return formatted_cover_letter
+# def generate_cover_letter(resume, job_description):
+#     system_message = """
+#     You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume and the job description provided. The cover letter should:
+#     1. Be professionally formatted with appropriate salutations and closings
+#     2. Highlight the candidate's most relevant skills and experiences for the specific job
+#     3. Show enthusiasm for the position and company
+#     4. Be concise, typically not exceeding one page
+#     5. Encourage the employer to review the attached resume and consider the candidate for an interview
+#     """
+
+#     user_message = f"""
+#     Please write a cover letter based on the following resume and job description:
+
+#     Resume:
+#     {resume}
+
+#     Job Description:
+#     {job_description}
+#     """
+
+#     response = openai.ChatCompletion.create(
+#         model="gpt-4",
+#         messages=[
+#             {"role": "system", "content": system_message},
+#             {"role": "user", "content": user_message}
+#         ]
+#     )
+
+#     return response.choices[0].message.content
 
 class PDF(FPDF):
     def header(self):
