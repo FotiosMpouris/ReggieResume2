@@ -238,8 +238,8 @@ def create_pdf(content, filename):
     # Add Unicode fonts (regular and bold)
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
     pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
-    
-      if filename == "cover_letter.pdf":
+
+    if filename == "cover_letter.pdf":
         # Cover letter specific formatting
         left_margin = 25.4  # 1 inch
         right_margin = 25.4  # 1 inch
@@ -277,7 +277,8 @@ def create_pdf(content, filename):
         # Process the body of the letter
         for paragraph in paragraphs[2:]:
             pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
-            pdf.ln(5)  
+            pdf.ln(5)
+              
     # if filename == "cover_letter.pdf":
     #     # Cover letter specific formatting
     #     left_margin = 25.4  # 1 inch
