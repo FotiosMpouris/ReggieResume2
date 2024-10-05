@@ -1,6 +1,7 @@
 import openai
 import re
 from fpdf import FPDF
+from datetime import date
 
 def analyze_resume_and_job(resume, job_description):
     system_message = """
