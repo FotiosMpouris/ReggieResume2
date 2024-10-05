@@ -276,6 +276,11 @@ def create_pdf(content, filename):
             pdf.cell(0, 5, line.strip(), ln=True)
         pdf.ln(5)
         
+        # contact_info = paragraphs[0].split('\n')
+        # for line in contact_info:
+        #     pdf.cell(0, 5, line.strip(), ln=True)
+        # pdf.ln(5)
+        
         # Process date and salutation
         if len(paragraphs) > 1:
             date_salutation = paragraphs[1].split('\n')
