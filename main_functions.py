@@ -84,6 +84,7 @@ def process_gpt_output(output):
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
     return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
+    
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
@@ -104,6 +105,7 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+    
 # def generate_full_resume(header, summary, skills_comparison, education, work_experience):
 #     skills, requirements = skills_comparison
 #     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
