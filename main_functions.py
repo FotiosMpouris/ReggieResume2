@@ -273,7 +273,8 @@ def create_pdf(content, filename):
         # Process contact information
         contact_info = paragraphs[0].split('\n')
         for line in contact_info:
-            pdf.cell(0, 5, line.strip(), ln=True)
+            pdf.set_x(left_margin)  # Ensure consistent left alignment
+            pdf.cell(0, 5, line.strip(), ln=True, align='L')
         pdf.ln(5)
         
         # contact_info = paragraphs[0].split('\n')
