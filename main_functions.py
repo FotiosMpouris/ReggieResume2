@@ -321,7 +321,7 @@ def create_pdf(content, filename):
                 pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
                 pdf.ln(3)
 
- pdf.output(filename)
+     pdf.output(filename)
     #     for i, section in enumerate(main_sections[1:], 1):
     #         if section.startswith("SKILLS & EXPERIENCE"):
     #             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
