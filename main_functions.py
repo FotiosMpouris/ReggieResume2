@@ -220,7 +220,8 @@ def create_pdf(content, filename):
         for paragraph in paragraphs[2:]:
             pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
             pdf.ln(5)
-   else:
+           
+    else:
         # Existing resume PDF generation code (with modifications)
         left_margin = 20
         right_margin = 20
@@ -319,56 +320,6 @@ def create_pdf(content, filename):
                 pdf.ln(3)
                 pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
                 pdf.ln(3)
-    
-    pdf.output(filename)         
-    # else:
-    #     # Existing resume PDF generation code (with modifications)
-    #     left_margin = 20
-    #     right_margin = 20
-    #     top_margin = 20
-    #     pdf.set_margins(left_margin, top_margin, right_margin)
-        
-    #     pdf.set_auto_page_break(auto=True, margin=15)  # Bottom margin
-        
-    #     # Calculate effective page width (accounting for margins)
-    #     effective_page_width = pdf.w - left_margin - right_margin
-        
-    #     # Split content into main sections
-    #     main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
-        
-    #     # Process the header section (name, telephone, address, email)
-    #     pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
-    #     header_lines = main_sections[0].split('\n')
-    #     header_info = "  ".join([line.split(": ", 1)[-1] for line in header_lines])
-        
-    #     # Extract first name from the header
-    #     first_name = header_info.split()[0]
-        
-    #     # Center the header between left and right margins
-    #     header_width = pdf.get_string_width(header_info)
-    #     if header_width > effective_page_width:
-    #         # If header is too wide, reduce font size
-    #         font_size = 12
-    #         while header_width > effective_page_width and font_size > 9:
-    #             font_size -= 0.5
-    #             pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
-    #             header_width = pdf.get_string_width(header_info)
-        
-    #     # Calculate the center position and shift it slightly to the left
-    #     x_position = (pdf.w - header_width) / 2 - pdf.get_string_width("  ")
-    #     pdf.set_x(x_position)
-        
-    #     pdf.cell(header_width, 6, header_info, align='C', ln=True)
-        
-    #     # Add extra spacing after the header
-    #     pdf.ln(10)
-        
-    #     # Add a line after the header
-    #     pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-    #     pdf.ln(3)
-        
-    #     # Process the rest of the sections
-    #     pdf.set_font("DejaVu", '', 11)
     #     for i, section in enumerate(main_sections[1:], 1):
     #         if section.startswith("SKILLS & EXPERIENCE"):
     #             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
