@@ -86,9 +86,9 @@ def process_gpt_output(output):
     
     return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
 
+    
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
-    first_name = header.split()[0]  # Assuming the first word in the header is the first name
     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
     
     full_resume = f"""
@@ -97,7 +97,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-{company_name} JOB REQUIREMENTS                     | {first_name}'s MATCHING SKILLS
+SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
 {comparison}
 
 EDUCATION
@@ -107,27 +107,6 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
-    
-# def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
-#     skills, requirements = skills_comparison
-#     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
-    
-#     full_resume = f"""
-# {header}
-
-# SUMMARY
-# {summary}
-
-# SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
-# {comparison}
-
-# EDUCATION
-# {education}
-
-# RELEVANT WORK EXPERIENCE
-# {work_experience}
-# """
-#     return full_resume
 
 def generate_cover_letter(resume, job_description, cover_letter_info):
     today = date.today().strftime("%B %d, %Y")
