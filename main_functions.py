@@ -292,17 +292,18 @@ def create_pdf(content, filename):
         # Process the rest of the sections
         pdf.set_font("DejaVu", '', 11)
         for i, section in enumerate(main_sections[1:], 1):
-        if section.startswith("SKILLS & EXPERIENCE"):
-            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-            col_width = effective_page_width / 2
+            if section.startswith("SKILLS & EXPERIENCE"):
+                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+                col_width = effective_page_width / 2
             
-            # Extract company name and job requirements header
-            company_job_req = section.split('\n')[0].split('|')[1].strip()
+                # Extract company name and job requirements header
+                company_job_req = section.split('\n')[0].split('|')[1].strip()
             
-            # Write both headers on the same line with personalization (swapped order)
-            pdf.cell(col_width, 5, company_job_req, align='L', border=0)
-            pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
-            pdf.ln(2)
+                # Write both headers on the same line with personalization (swapped order)
+                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+                pdf.ln(2)
+                
         # for i, section in enumerate(main_sections[1:], 1):
         #     if section.startswith("SKILLS & EXPERIENCE"):
         #         pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
