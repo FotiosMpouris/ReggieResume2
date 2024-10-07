@@ -85,9 +85,10 @@ def process_gpt_output(output):
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
     return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
-    
+
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
+    first_name = header.split()[0]  # Assuming the first word in the header is the first name
     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
     
     full_resume = f"""
@@ -96,7 +97,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
+{company_name} JOB REQUIREMENTS                     | {first_name}'s MATCHING SKILLS
 {comparison}
 
 EDUCATION
@@ -106,6 +107,27 @@ RELEVANT WORK EXPERIENCE
 {work_experience}
 """
     return full_resume
+    
+# def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
+#     skills, requirements = skills_comparison
+#     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+#     full_resume = f"""
+# {header}
+
+# SUMMARY
+# {summary}
+
+# SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
+# {comparison}
+
+# EDUCATION
+# {education}
+
+# RELEVANT WORK EXPERIENCE
+# {work_experience}
+# """
+#     return full_resume
 
 def generate_cover_letter(resume, job_description, cover_letter_info):
     today = date.today().strftime("%B %d, %Y")
@@ -270,17 +292,29 @@ def create_pdf(content, filename):
         # Process the rest of the sections
         pdf.set_font("DejaVu", '', 11)
         for i, section in enumerate(main_sections[1:], 1):
-            if section.startswith("SKILLS & EXPERIENCE"):
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                col_width = effective_page_width / 2
+        if section.startswith("SKILLS & EXPERIENCE"):
+            pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+            col_width = effective_page_width / 2
+            
+            # Extract company name and job requirements header
+            company_job_req = section.split('\n')[0].split('|')[1].strip()
+            
+            # Write both headers on the same line with personalization (swapped order)
+            pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+            pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+            pdf.ln(2)
+        # for i, section in enumerate(main_sections[1:], 1):
+        #     if section.startswith("SKILLS & EXPERIENCE"):
+        #         pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+        #         col_width = effective_page_width / 2
                 
-                # Extract company name and job requirements header
-                company_job_req = section.split('\n')[0].split('|')[1].strip()
+        #         # Extract company name and job requirements header
+        #         company_job_req = section.split('\n')[0].split('|')[1].strip()
                 
-                # Write both headers on the same line with personalization (swapped order)
-                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
-                pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0, ln=True)
-                pdf.ln(2)
+        #         # Write both headers on the same line with personalization (swapped order)
+        #         pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+        #         pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0, ln=True)
+        #         pdf.ln(2)
                 
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
                 
