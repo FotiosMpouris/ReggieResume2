@@ -279,7 +279,8 @@ def create_pdf(content, filename):
                 
                 # Write both headers on the same line with personalization (swapped order)
                 pdf.cell(col_width, 5, company_job_req, align='L', border=0)
-                pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0, ln=True)
+                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+                #pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0, ln=True)
                 pdf.ln(2)
                 
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
