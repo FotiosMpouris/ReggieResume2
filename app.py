@@ -46,50 +46,6 @@ def generate_resume():
             st.error(f"An error occurred during generation: {str(e)}")
     else:
         st.warning("Please provide both your resume and the job description.")
-# def generate_resume():
-#     if resume and job_description:
-#         try:
-#             with st.spinner("Analyzing and tailoring your resume..."):
-#                 header, summary, comparison, education, work_experience, cover_letter_info = analyze_resume_and_job(resume, job_description)
-#                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience)
-#                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
-                
-#                 st.session_state.resume_data = {
-#                     'header': header,
-#                     'summary': summary,
-#                     'comparison': comparison,
-#                     'education': education,
-#                     'work_experience': work_experience,
-#                     'full_resume': full_resume,
-#                     'cover_letter': cover_letter
-#                 }
-#                 st.session_state.generated = True
-#         except Exception as e:
-#             st.error(f"An error occurred during generation: {str(e)}")
-#     else:
-#         st.warning("Please provide both your resume and the job description.")
-# def generate_resume():
-#     if resume and job_description:
-#         try:
-#             with st.spinner("Analyzing and tailoring your resume..."):
-#                 header, summary, comparison, education, work_experience = analyze_resume_and_job(resume, job_description)
-#                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience)
-#                 cover_letter = generate_cover_letter(resume, job_description)
-                
-#                 st.session_state.resume_data = {
-#                     'header': header,
-#                     'summary': summary,
-#                     'comparison': comparison,
-#                     'education': education,
-#                     'work_experience': work_experience,
-#                     'full_resume': full_resume,
-#                     'cover_letter': cover_letter
-#                 }
-#                 st.session_state.generated = True
-#         except Exception as e:
-#             st.error(f"An error occurred during generation: {str(e)}")
-#     else:
-#         st.warning("Please provide both your resume and the job description.")
 
 if st.button("Analyze and Tailor Resume"):
     generate_resume()
