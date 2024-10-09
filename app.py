@@ -9,7 +9,7 @@ openai.api_key = st.secrets["openai_api_key"]
 st.set_page_config(page_title="AI Resume Tailor", page_icon="📄", layout="wide")
 
 # Load and display the logo alongside the title
-col1, col2 = st.columns([1, 4])
+col1, col2 = st.columns([1, 5])
 with col1:
     logo = Image.open("logo.png")
     st.image(logo, width=100)
