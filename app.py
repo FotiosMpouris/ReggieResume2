@@ -1,7 +1,13 @@
 import streamlit as st
 import openai
 from PIL import Image
-from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf, generate_follow_up_paragraph
+from main_functions import (
+    analyze_resume_and_job,
+    generate_full_resume,
+    generate_cover_letter,
+    create_pdf,
+    generate_follow_up_paragraph
+)
 
 # Set up OpenAI API key
 openai.api_key = st.secrets["openai_api_key"]
@@ -11,8 +17,11 @@ st.set_page_config(page_title="AI Resume Tailor", page_icon="📄", layout="wide
 # Load and display the logo alongside the title
 col1, col2 = st.columns([1, 12])
 with col1:
-    logo = Image.open("logo.png")
-    st.image(logo, width=100)
+    try:
+        logo = Image.open("logo.png")
+        st.image(logo, width=100)
+    except FileNotFoundError:
+        st.warning("Logo image not found. Please ensure 'logo.png' is in the assets folder.")
 with col2:
     st.title("AI Resume Tailor")
 
@@ -37,20 +46,30 @@ def generate_resume():
     if resume and job_description:
         try:
             with st.spinner("Analyzing and tailoring your resume..."):
-                header, summary, comparison, education, work_experience, cover_letter_info = analyze_resume_and_job(resume, job_description)
-                company_name = cover_letter_info['Company Name']
-                full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
+                (
+                    header,
+                    summary,
+                    comparison,
+                    education,
+                    work_experience,
+                    cover_letter_info,
+                    ats_tips
+                ) = analyze_resume_and_job(resume, job_description)
+                
+                company_name = cover_letter_info.get('Company Name', 'Hiring Team')
+                full_resume = generate_full_resume(header, summary, comparison, education, work_experience, ats_tips, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
                 follow_up = generate_follow_up_paragraph(full_resume, cover_letter)
                 
                 st.session_state.resume_data = {
                     'header': header,
                     'summary': summary,
-                    'comparison': comparison,
+                    'comparison': comparison,  # This is now a dictionary
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter
+                    'cover_letter': cover_letter,
+                    'ats_tips': ats_tips
                 }
                 st.session_state.follow_up = follow_up
                 st.session_state.generated = True
@@ -72,15 +91,12 @@ if st.session_state.generated:
     st.success(data['summary'])
     
     st.subheader("Skills Comparison")
-    comp_col1, comp_col2 = st.columns(2)
-    with comp_col1:
-        st.markdown("**Your Skills & Experience**")
-        for skill in data['comparison'][0]:
+    comparison = data['comparison']
+    for category, skills in comparison.items():
+        st.markdown(f"**{category}**")
+        for skill in skills:
             st.write(f"• {skill}")
-    with comp_col2:
-        st.markdown("**Job Requirements**")
-        for req in data['comparison'][1]:
-            st.write(f"• {req}")
+        st.markdown("")  # Add a blank line for spacing
     
     st.subheader("Education")
     st.write(data['education'])
@@ -98,36 +114,56 @@ if st.session_state.generated:
     st.subheader("Follow-Up Paragraph")
     st.text_area("Your Follow-Up Paragraph:", st.session_state.follow_up, height=150)
     
+    st.subheader("ATS Optimization Tips")
+    st.markdown(data['ats_tips'])
+    
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
         create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(label="Download Resume as PDF",
-                               data=PDFbyte,
-                               file_name="tailored_resume.pdf",
-                               mime='application/octet-stream')
+            st.download_button(
+                label="Download Resume as PDF",
+                data=PDFbyte,
+                file_name="tailored_resume.pdf",
+                mime='application/pdf'
+            )
         
         with col2:
             with open("cover_letter.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(label="Download Cover Letter as PDF",
-                               data=PDFbyte,
-                               file_name="cover_letter.pdf",
-                               mime='application/octet-stream')
+            st.download_button(
+                label="Download Cover Letter as PDF",
+                data=PDFbyte,
+                file_name="cover_letter.pdf",
+                mime='application/pdf'
+            )
         
         with col3:
             # Create a simple text file for the follow-up paragraph
             follow_up_content = st.session_state.follow_up
             follow_up_bytes = follow_up_content.encode('utf-8')
-            st.download_button(label="Download Follow-Up Paragraph",
-                               data=follow_up_bytes,
-                               file_name="follow_up_paragraph.txt",
-                               mime='text/plain')
+            st.download_button(
+                label="Download Follow-Up Paragraph",
+                data=follow_up_bytes,
+                file_name="follow_up_paragraph.txt",
+                mime='text/plain'
+            )
+        
+        with col4:
+            # Download ATS Tips as text
+            ats_tips_content = data['ats_tips']
+            ats_tips_bytes = ats_tips_content.encode('utf-8')
+            st.download_button(
+                label="Download ATS Tips",
+                data=ats_tips_bytes,
+                file_name="ats_tips.txt",
+                mime='text/plain'
+            )
     except Exception as e:
         st.error(f"An error occurred while creating downloads: {str(e)}")
 
