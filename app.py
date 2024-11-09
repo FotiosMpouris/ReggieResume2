@@ -2,11 +2,12 @@ import streamlit as st
 import openai
 from PIL import Image
 from main_functions import (
-    analyze_resume_and_job,
-    generate_full_resume,
-    generate_cover_letter,
-    generate_follow_up_paragraph,
-    create_pdf
+    analyze_resume_and_job, 
+    generate_full_resume, 
+    generate_cover_letter, 
+    create_pdf, 
+    generate_follow_up_paragraph, 
+    sanitize_for_pdf
 )
 
 # Set up OpenAI API key
@@ -27,6 +28,8 @@ if 'generated' not in st.session_state:
     st.session_state.generated = False
 if 'resume_data' not in st.session_state:
     st.session_state.resume_data = None
+if 'follow_up' not in st.session_state:
+    st.session_state.follow_up = ""
 
 def sanitize_for_pdf(text):
     return ''.join(char for char in text if ord(char) < 128)
@@ -45,7 +48,9 @@ def generate_resume():
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
-                follow_up_paragraph = generate_follow_up_paragraph(resume, job_description)
+                
+                # Generate follow-up paragraph
+                follow_up = generate_follow_up_paragraph(full_resume, cover_letter)
                 
                 st.session_state.resume_data = {
                     'header': header,
@@ -54,9 +59,9 @@ def generate_resume():
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter,
-                    'follow_up_paragraph': follow_up_paragraph
+                    'cover_letter': cover_letter
                 }
+                st.session_state.follow_up = follow_up
                 st.session_state.generated = True
         except Exception as e:
             st.error(f"An error occurred during generation: {str(e)}")
@@ -68,6 +73,7 @@ if st.button("Analyze and Tailor Resume"):
 
 if st.session_state.generated:
     data = st.session_state.resume_data
+    follow_up = st.session_state.follow_up
     
     st.subheader("Tailored Header")
     st.info(data['header'])
@@ -100,16 +106,14 @@ if st.session_state.generated:
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
     
     st.subheader("Follow-Up Paragraph")
-    st.text_area("Your Follow-Up Paragraph:", data['follow_up_paragraph'], height=150)
-    st.info("This paragraph can be used in follow-up emails or communications after submitting your application.")
+    st.success(follow_up)
     
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
         create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
-        create_pdf(sanitize_for_pdf(data['follow_up_paragraph']), "follow_up_paragraph.pdf")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
@@ -127,16 +131,6 @@ if st.session_state.generated:
                 label="Download Cover Letter as PDF",
                 data=PDFbyte,
                 file_name="cover_letter.pdf",
-                mime='application/octet-stream'
-            )
-        
-        with col3:
-            with open("follow_up_paragraph.pdf", "rb") as pdf_file:
-                PDFbyte = pdf_file.read()
-            st.download_button(
-                label="Download Follow-Up Paragraph as PDF",
-                data=PDFbyte,
-                file_name="follow_up_paragraph.pdf",
                 mime='application/octet-stream'
             )
     except Exception as e:
