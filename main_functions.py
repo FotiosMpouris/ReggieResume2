@@ -12,8 +12,8 @@ def extract_keywords(job_description, num_keywords=15):
     Extracts the top keywords from the job description using spaCy's NLP capabilities.
     """
     doc = nlp(job_description.lower())
-    # Filter tokens
-    keywords = [token.text for token in doc if token.is_alpha and not token.is_stop]
+    # Filter tokens: nouns, proper nouns, verbs, adjectives
+    keywords = [token.text for token in doc if token.is_alpha and not token.is_stop and token.pos_ in ['NOUN', 'PROPN', 'VERB', 'ADJ']]
     # Frequency distribution
     freq = {}
     for word in keywords:
@@ -151,7 +151,7 @@ EDUCATION
 RELEVANT WORK EXPERIENCE
 {work_experience}
 """
-    return full_resume
+    return full_resume.strip()
 
 def generate_cover_letter(resume, job_description, cover_letter_info, tone='professional'):
     """
@@ -274,17 +274,17 @@ class PDF(FPDF):
 
 def create_pdf(content, filename):
     """
-    Creates a PDF file (resume or cover letter) with enhanced formatting.
+    Creates a PDF file (resume, cover letter, or follow-up message) with enhanced formatting.
     """
     pdf = PDF(format='Letter')
     pdf.add_page()
     
     # Add Unicode fonts (regular and bold)
-    pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
-    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
+    pdf.add_font('DejaVu', '', 'fonts/DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', 'B', 'fonts/DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    if filename == "cover_letter.pdf":
-        # Cover letter specific formatting
+    if filename == "cover_letter.pdf" or filename == "follow_up_message.pdf":
+        # Cover letter and Follow-Up message specific formatting
         left_margin = 25.4  # 1 inch
         right_margin = 25.4  # 1 inch
         top_margin = 25.4  # 1 inch
@@ -298,7 +298,7 @@ def create_pdf(content, filename):
         # Set font for body text
         pdf.set_font("DejaVu", '', 11)
         
-        # Split cover letter into paragraphs
+        # Split content into paragraphs
         paragraphs = content.split('\n\n')
         
         # Process contact information
@@ -385,39 +385,39 @@ def create_pdf(content, filename):
 if __name__ == "__main__":
     # Example resume and job description
     example_resume = """
-    Full Name: John Doe
-    Address: 123 Main Street, Anytown, USA
-    Email: johndoe@example.com
-    Phone: (123) 456-7890
+Full Name: John Doe
+Address: 123 Main Street, Anytown, USA
+Email: johndoe@example.com
+Phone: (123) 456-7890
 
-    SUMMARY
-    Experienced software engineer with a strong background in developing scalable web applications and working with cross-functional teams.
+SUMMARY
+Experienced software engineer with a strong background in developing scalable web applications and working with cross-functional teams.
 
-    SKILLS & EXPERIENCE
-    - Proficient in Python, JavaScript, and Java
-    - Experienced with Django, React, and Node.js
-    - Strong understanding of RESTful APIs and microservices architecture
-    - Excellent problem-solving and debugging skills
-    - Familiar with AWS and cloud deployment
-    - Agile and Scrum methodologies
-    - Version control using Git
+SKILLS & EXPERIENCE
+- Proficient in Python, JavaScript, and Java
+- Experienced with Django, React, and Node.js
+- Strong understanding of RESTful APIs and microservices architecture
+- Excellent problem-solving and debugging skills
+- Familiar with AWS and cloud deployment
+- Agile and Scrum methodologies
+- Version control using Git
 
-    EDUCATION
-    Bachelor of Science in Computer Science, University of Technology, 2018
+EDUCATION
+Bachelor of Science in Computer Science, University of Technology, 2018
 
-    RELEVANT WORK EXPERIENCE
-    Senior Software Engineer at Tech Solutions (2020 - Present)
-    - Led a team of 5 engineers in developing a scalable e-commerce platform.
-    - Implemented RESTful APIs, improving system performance by 30%.
+RELEVANT WORK EXPERIENCE
+Senior Software Engineer at Tech Solutions (2020 - Present)
+- Led a team of 5 engineers in developing a scalable e-commerce platform.
+- Implemented RESTful APIs, improving system performance by 30%.
 
-    Software Engineer at Web Innovators (2018 - 2020)
-    - Developed front-end components using React, enhancing user experience.
-    - Collaborated with back-end developers to integrate APIs.
-    """
+Software Engineer at Web Innovators (2018 - 2020)
+- Developed front-end components using React, enhancing user experience.
+- Collaborated with back-end developers to integrate APIs.
+"""
 
     example_job_description = """
-    We are seeking a highly skilled Software Engineer to join our dynamic team at Innovative Tech Corp. The ideal candidate will have experience in developing scalable web applications, a strong understanding of microservices architecture, and proficiency in Python and JavaScript. Responsibilities include designing and implementing RESTful APIs, collaborating with cross-functional teams, and deploying applications on AWS. Familiarity with Agile methodologies and version control systems is essential.
-    """
+We are seeking a highly skilled Software Engineer to join our dynamic team at Innovative Tech Corp. The ideal candidate will have experience in developing scalable web applications, a strong understanding of microservices architecture, and proficiency in Python and JavaScript. Responsibilities include designing and implementing RESTful APIs, collaborating with cross-functional teams, and deploying applications on AWS. Familiarity with Agile methodologies and version control systems is essential.
+"""
 
     # Analyze resume and job description
     analysis = analyze_resume_and_job(example_resume, example_job_description)
