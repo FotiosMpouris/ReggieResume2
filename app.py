@@ -1,13 +1,7 @@
 import streamlit as st
 import openai
 from PIL import Image
-from main_functions import (
-    analyze_resume_and_job,
-    generate_full_resume,
-    generate_cover_letter,
-    create_pdf,
-    generate_follow_up_paragraph
-)
+from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf, generate_follow_up_paragraph
 
 # Set up OpenAI API key
 openai.api_key = st.secrets["openai_api_key"]
@@ -27,6 +21,8 @@ if 'generated' not in st.session_state:
     st.session_state.generated = False
 if 'resume_data' not in st.session_state:
     st.session_state.resume_data = None
+if 'follow_up' not in st.session_state:
+    st.session_state.follow_up = None
 
 def sanitize_for_pdf(text):
     return ''.join(char for char in text if ord(char) < 128)
@@ -41,7 +37,7 @@ def generate_resume():
     if resume and job_description:
         try:
             with st.spinner("Analyzing and tailoring your resume..."):
-                header, summary, comparison, education, work_experience, cover_letter_info, follow_up_paragraph = analyze_resume_and_job(resume, job_description)
+                header, summary, comparison, education, work_experience, cover_letter_info = analyze_resume_and_job(resume, job_description)
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
@@ -54,9 +50,9 @@ def generate_resume():
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter,
-                    'follow_up': follow_up
+                    'cover_letter': cover_letter
                 }
+                st.session_state.follow_up = follow_up
                 st.session_state.generated = True
         except Exception as e:
             st.error(f"An error occurred during generation: {str(e)}")
@@ -100,46 +96,40 @@ if st.session_state.generated:
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
     
     st.subheader("Follow-Up Paragraph")
-    st.text_area("Copy your follow-up paragraph:", data['follow_up'], height=150)
+    st.text_area("Your Follow-Up Paragraph:", st.session_state.follow_up, height=150)
     
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
-        create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf", is_cover_letter=True)
-        create_pdf(sanitize_for_pdf(data['follow_up']), "follow_up_paragraph.pdf")
-    
+        create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
+
         col1, col2, col3 = st.columns(3)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(
-                label="Download Resume as PDF",
-                data=PDFbyte,
-                file_name="tailored_resume.pdf",
-                mime='application/pdf'
-            )
+            st.download_button(label="Download Resume as PDF",
+                               data=PDFbyte,
+                               file_name="tailored_resume.pdf",
+                               mime='application/octet-stream')
         
         with col2:
             with open("cover_letter.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(
-                label="Download Cover Letter as PDF",
-                data=PDFbyte,
-                file_name="cover_letter.pdf",
-                mime='application/pdf'
-            )
+            st.download_button(label="Download Cover Letter as PDF",
+                               data=PDFbyte,
+                               file_name="cover_letter.pdf",
+                               mime='application/octet-stream')
         
         with col3:
-            with open("follow_up_paragraph.pdf", "rb") as pdf_file:
-                PDFbyte = pdf_file.read()
-            st.download_button(
-                label="Download Follow-Up Paragraph as PDF",
-                data=PDFbyte,
-                file_name="follow_up_paragraph.pdf",
-                mime='application/pdf'
-            )
+            # Create a simple text file for the follow-up paragraph
+            follow_up_content = st.session_state.follow_up
+            follow_up_bytes = follow_up_content.encode('utf-8')
+            st.download_button(label="Download Follow-Up Paragraph",
+                               data=follow_up_bytes,
+                               file_name="follow_up_paragraph.txt",
+                               mime='text/plain')
     except Exception as e:
-        st.error(f"An error occurred while creating PDFs: {str(e)}")
+        st.error(f"An error occurred while creating downloads: {str(e)}")
 
 if st.button("Start Over"):
     for key in list(st.session_state.keys()):
