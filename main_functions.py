@@ -8,7 +8,7 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comprable to Jog Requirements, and write candidate's skill in a sentence to best match Job Requirements statement.Include the company name from the job description before "Job Requirements".
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write candidate's skill in a sentence to best match Job Requirements statement. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
@@ -85,7 +85,7 @@ def process_gpt_output(output):
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
     return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
-    
+
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
@@ -150,6 +150,32 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     
     return formatted_cover_letter
 
+def generate_follow_up_paragraph(resume, job_description):
+    system_message = """
+    You are a creative and professional content generator. Your task is to write an upbeat and witty follow-up paragraph that complements the user's tailored resume and cover letter. The paragraph should be concise, engaging, and include relevant details based on the provided resume and job description.
+    """
+
+    user_message = f"""
+    Based on the following resume and job description, generate an upbeat and witty follow-up paragraph that complements the tailored resume and cover letter. The tone should be professional yet engaging.
+
+    Resume:
+    {resume}
+
+    Job Description:
+    {job_description}
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    follow_up = response.choices[0].message.content.strip()
+    return follow_up
+
 class PDF(FPDF):
     def header(self):
         # No header for resume
@@ -199,11 +225,6 @@ def create_pdf(content, filename):
             pdf.set_x(left_margin)  # Ensure consistent left alignment
             pdf.cell(0, 5, line.strip(), ln=True, align='L')
         pdf.ln(5)
-        
-        # contact_info = paragraphs[0].split('\n')
-        # for line in contact_info:
-        #     pdf.cell(0, 5, line.strip(), ln=True)
-        # pdf.ln(5)
         
         # Process date and salutation
         if len(paragraphs) > 1:
@@ -321,7 +342,5 @@ def create_pdf(content, filename):
                 pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
                 pdf.ln(3)
 
-
     pdf.output(filename)
-     
-  
+
