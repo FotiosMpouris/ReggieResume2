@@ -13,6 +13,7 @@ def analyze_resume_and_job(resume, job_description):
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
     7. Extract the company name from the job description for use in the cover letter greeting.
+    8. Generate a follow-up paragraph that can be used in communications, reflecting an upbeat and witty yet professional tone.
     """
 
     user_message = f"""
@@ -55,6 +56,9 @@ def analyze_resume_and_job(resume, job_description):
     Email: [Extracted email]
     Phone: [Extracted phone number]
     Company Name: [Extracted company name]
+
+    FOLLOW-UP PARAGRAPH:
+    [Generated follow-up paragraph]
     """
 
     response = openai.ChatCompletion.create(
@@ -69,7 +73,7 @@ def analyze_resume_and_job(resume, job_description):
     return process_gpt_output(output)
 
 def process_gpt_output(output):
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:)', output)
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:|FOLLOW-UP PARAGRAPH:)', output)
     
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
@@ -84,7 +88,9 @@ def process_gpt_output(output):
     cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
-    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
+    follow_up_paragraph = re.sub(r'^FOLLOW-UP PARAGRAPH:\s*', '', sections[6], flags=re.MULTILINE).strip()
+    
+    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info, follow_up_paragraph
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
@@ -116,7 +122,8 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     2. Show enthusiasm for the position and company
     3. Be concise, typically not exceeding one page
     4. Encourage the employer to review the attached resume and consider the candidate for an interview
-    5. Do not include any salutation, contact information, or closing in the body of the letter
+    5. Use a tone that reflects the candidate's professional and personable nature
+    6. Do not include any salutation, contact information, or closing in the body of the letter
     """
 
     user_message = f"""
@@ -152,17 +159,19 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
 
 def generate_follow_up_paragraph(full_resume, cover_letter):
     system_message = """
-    You are an assistant helping [Your Name] generate a follow-up paragraph for their job application materials. The paragraph should be upbeat, witty, yet professional, providing an insightful summary or additional information that complements the resume and cover letter. Ensure the tone reflects [Your Name]'s personal writing style.
+    You are a professional writing assistant helping to create follow-up communication after submitting a resume and cover letter. Your task is to generate a concise, upbeat, and witty yet professional paragraph that the candidate can use to follow up on their application. Ensure the tone reflects the candidate's voice and includes relevant details without relying on dad jokes unless they are genuinely funny.
     """
 
     user_message = f"""
-    Based on the following resume and cover letter, please generate a concise follow-up paragraph that can be added to the application's UI. The paragraph should be upbeat, witty, yet professional, and complement the existing materials.
+    Based on the following resume and cover letter, please generate a follow-up paragraph that I can use in my communications:
 
     Resume:
     {full_resume}
 
     Cover Letter:
     {cover_letter}
+
+    The paragraph should be short, upbeat, witty (without forced dad jokes), professional, and include relevant details about my application.
     """
 
     response = openai.ChatCompletion.create(
@@ -173,8 +182,8 @@ def generate_follow_up_paragraph(full_resume, cover_letter):
         ]
     )
 
-    follow_up = response.choices[0].message.content.strip()
-    return follow_up
+    follow_up_paragraph = response.choices[0].message.content.strip()
+    return follow_up_paragraph
 
 class PDF(FPDF):
     def header(self):
@@ -193,7 +202,7 @@ class PDF(FPDF):
         elif ln == 2:
             self.ln(2*h)
 
-def create_pdf(content, filename):
+def create_pdf(content, filename, is_cover_letter=False):
     pdf = PDF(format='Letter')
     pdf.add_page()
     
@@ -201,7 +210,7 @@ def create_pdf(content, filename):
     pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
     pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
     
-    if filename == "cover_letter.pdf":
+    if is_cover_letter:
         # Cover letter specific formatting
         left_margin = 25.4  # 1 inch
         right_margin = 25.4  # 1 inch
@@ -258,7 +267,7 @@ def create_pdf(content, filename):
         main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
         
         # Process the header section (name, telephone, address, email)
-        pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
+        pdf.set_font("DejaVu", 'B', 14)  # Increased font size for better visibility
         header_lines = main_sections[0].split('\n')
         header_info = "  ".join([line.split(": ", 1)[-1] for line in header_lines])
         
@@ -269,7 +278,7 @@ def create_pdf(content, filename):
         header_width = pdf.get_string_width(header_info)
         if header_width > effective_page_width:
             # If header is too wide, reduce font size
-            font_size = 12
+            font_size = 14
             while header_width > effective_page_width and font_size > 9:
                 font_size -= 0.5
                 pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
@@ -279,71 +288,80 @@ def create_pdf(content, filename):
         x_position = (pdf.w - header_width) / 2 - pdf.get_string_width("  ")
         pdf.set_x(x_position)
         
-        pdf.cell(header_width, 6, header_info, align='C', ln=True)
+        pdf.cell(header_width, 10, header_info, align='C', ln=True)
         
         # Add extra spacing after the header
         pdf.ln(10)
         
         # Add a line after the header
         pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-        pdf.ln(3)
+        pdf.ln(5)
         
         # Process the rest of the sections
-        pdf.set_font("DejaVu", '', 11)
+        pdf.set_font("DejaVu", 'B', 12)  # Set to bold for section headers
         for i, section in enumerate(main_sections[1:], 1):
             if section.startswith("SKILLS & EXPERIENCE"):
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
                 col_width = effective_page_width / 2
                 
                 # Extract company name and job requirements header
                 company_job_req = section.split('\n')[0].split('|')[1].strip()
                 
                 # Write both headers on the same line with personalization (swapped order)
-                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
-                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+                pdf.cell(col_width, 7, f"{first_name}'s Skills & Experience", align='L', border=0)
+                pdf.cell(col_width, 7, f"{company_job_req}", align='L', border=0, ln=True)
                 pdf.ln(2)
                 
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
                 
                 lines = section.split('\n')[1:]  # Skip the header line
                 
-                max_y = pdf.get_y()
-                first_item = True
-                item_number = 1
                 for line in lines:
                     if '|' in line:
                         left, right = line.split('|')
-                        if first_item:
-                            first_item = False
-                            continue  # Skip the first item as it's redundant
-                        pdf.set_xy(left_margin, max_y)
-                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + right.strip(), align='L')  # Job Requirements (left column)
-                        new_y = pdf.get_y()
-                        
-                        pdf.set_xy(left_margin + col_width, max_y)
-                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + left.strip(), align='L')  # Matching Skills (right column)
-                        
-                        max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
-                        item_number += 1
+                        pdf.cell(col_width, 6, f"• {left.strip()}", ln=False)
+                        pdf.cell(col_width, 6, f"• {right.strip()}", ln=True)
                     else:
-                        pdf.set_xy(left_margin, max_y)
-                        pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
-                        max_y = pdf.get_y() + 2
+                        pdf.multi_cell(col_width * 2, 6, line.strip(), align='L')
                 
-                pdf.set_y(max_y)
+                pdf.ln(2)
             else:
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
+                pdf.set_font("DejaVu", 'B', 12)  # Set to bold for section headers
+                pdf.cell(0, 7, section.split('\n')[0], ln=True)  # Write section header
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-                pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
-            
-            if i < len(main_sections) - 1:
-                pdf.ln(3)
-                pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
-                pdf.ln(3)
-
+                pdf.multi_cell(effective_page_width, 6, '\n'.join(section.split('\n')[1:]), align='J')
+                pdf.ln(2)
+                
+                # Add a line after each section except the last
+                if i < len(main_sections) - 1:
+                    pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+                    pdf.ln(2)
 
     pdf.output(filename)
 
-def sanitize_for_pdf(text):
-    return ''.join(char for char in text if ord(char) < 128)
+def generate_follow_up_paragraph(full_resume, cover_letter):
+    system_message = """
+    You are a professional writing assistant helping to create follow-up communication after submitting a resume and cover letter. Your task is to generate a concise, upbeat, and witty yet professional paragraph that the candidate can use to follow up on their application. Ensure the tone reflects the candidate's voice and includes relevant details without relying on dad jokes unless they are genuinely funny.
+    """
+
+    user_message = f"""
+    Based on the following resume and cover letter, please generate a follow-up paragraph that I can use in my communications:
+
+    Resume:
+    {full_resume}
+
+    Cover Letter:
+    {cover_letter}
+
+    The paragraph should be short, upbeat, witty (without forced dad jokes), professional, and include relevant details about my application.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    follow_up_paragraph = response.choices[0].message.content.strip()
+    return follow_up_paragraph
