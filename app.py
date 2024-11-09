@@ -1,7 +1,13 @@
 import streamlit as st
 import openai
 from PIL import Image
-from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf
+from main_functions import (
+    analyze_resume_and_job,
+    generate_full_resume,
+    generate_cover_letter,
+    generate_follow_up_paragraph,
+    create_pdf
+)
 
 # Set up OpenAI API key
 openai.api_key = st.secrets["openai_api_key"]
@@ -39,6 +45,7 @@ def generate_resume():
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
+                follow_up_paragraph = generate_follow_up_paragraph(resume, job_description)
                 
                 st.session_state.resume_data = {
                     'header': header,
@@ -47,7 +54,8 @@ def generate_resume():
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter
+                    'cover_letter': cover_letter,
+                    'follow_up_paragraph': follow_up_paragraph
                 }
                 st.session_state.generated = True
         except Exception as e:
@@ -90,28 +98,47 @@ if st.session_state.generated:
     
     st.subheader("Cover Letter")
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
-
+    
+    st.subheader("Follow-Up Paragraph")
+    st.text_area("Your Follow-Up Paragraph:", data['follow_up_paragraph'], height=150)
+    st.info("This paragraph can be used in follow-up emails or communications after submitting your application.")
+    
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
         create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
+        create_pdf(sanitize_for_pdf(data['follow_up_paragraph']), "follow_up_paragraph.pdf")
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(label="Download Resume as PDF",
-                               data=PDFbyte,
-                               file_name="tailored_resume.pdf",
-                               mime='application/octet-stream')
+            st.download_button(
+                label="Download Resume as PDF",
+                data=PDFbyte,
+                file_name="tailored_resume.pdf",
+                mime='application/octet-stream'
+            )
         
         with col2:
             with open("cover_letter.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
-            st.download_button(label="Download Cover Letter as PDF",
-                               data=PDFbyte,
-                               file_name="cover_letter.pdf",
-                               mime='application/octet-stream')
+            st.download_button(
+                label="Download Cover Letter as PDF",
+                data=PDFbyte,
+                file_name="cover_letter.pdf",
+                mime='application/octet-stream'
+            )
+        
+        with col3:
+            with open("follow_up_paragraph.pdf", "rb") as pdf_file:
+                PDFbyte = pdf_file.read()
+            st.download_button(
+                label="Download Follow-Up Paragraph as PDF",
+                data=PDFbyte,
+                file_name="follow_up_paragraph.pdf",
+                mime='application/octet-stream'
+            )
     except Exception as e:
         st.error(f"An error occurred while creating PDFs: {str(e)}")
 
@@ -122,4 +149,3 @@ if st.button("Start Over"):
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
-
