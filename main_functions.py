@@ -3,9 +3,17 @@ import re
 from fpdf import FPDF
 from datetime import date
 import spacy
+import os
 
 # Load spaCy English model for keyword extraction
-nlp = spacy.load("en_core_web_sm")
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    # If the model isn't found, inform the user to install it
+    raise OSError(
+        "SpaCy model 'en_core_web_sm' not found. "
+        "Please ensure it's installed by adding 'en_core_web_sm==3.6.4' to your requirements.txt."
+    )
 
 def extract_keywords(job_description, num_keywords=15):
     """
@@ -13,7 +21,11 @@ def extract_keywords(job_description, num_keywords=15):
     """
     doc = nlp(job_description.lower())
     # Filter tokens: nouns, proper nouns, verbs, adjectives
-    keywords = [token.text for token in doc if token.is_alpha and not token.is_stop and token.pos_ in ['NOUN', 'PROPN', 'VERB', 'ADJ']]
+    keywords = [
+        token.text
+        for token in doc
+        if token.is_alpha and not token.is_stop and token.pos_ in ['NOUN', 'PROPN', 'VERB', 'ADJ']
+    ]
     # Frequency distribution
     freq = {}
     for word in keywords:
@@ -110,24 +122,34 @@ def process_gpt_output(output):
     """
     Processes the GPT-4 output and extracts relevant sections.
     """
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:|ATS KEYWORDS:)', output)
-    
-    header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
-    summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
-    
-    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
-    
-    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
-    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
-    
-    cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
-    cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw if ':' in item}
-    
-    ats_keywords = re.sub(r'^ATS KEYWORDS:\s*', '', sections[6], flags=re.MULTILINE).strip().split(', ')
-    
-    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info, ats_keywords
+    sections = re.split(
+        r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:|ATS KEYWORDS:)', 
+        output
+    )
+
+    try:
+        header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+        summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+
+        comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+        your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+        job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+
+        education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+        work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+
+        cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
+        cover_letter_info = {
+            item.split(':', 1)[0].strip(): item.split(':', 1)[1].strip()
+            for item in cover_letter_info_raw if ':' in item
+        }
+
+        ats_keywords = re.sub(r'^ATS KEYWORDS:\s*', '', sections[6], flags=re.MULTILINE).strip().split(', ')
+
+        return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info, ats_keywords
+    except IndexError as e:
+        print(f"Error processing GPT output: {e}")
+        return None
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     """
@@ -135,7 +157,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
     """
     skills, requirements = skills_comparison
     comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
-    
+
     full_resume = f"""
 {header}
 
@@ -150,7 +172,7 @@ EDUCATION
 
 RELEVANT WORK EXPERIENCE
 {work_experience}
-"""
+    """
     return full_resume.strip()
 
 def generate_cover_letter(resume, job_description, cover_letter_info, tone='professional'):
@@ -158,7 +180,7 @@ def generate_cover_letter(resume, job_description, cover_letter_info, tone='prof
     Generates a cover letter based on the resume, job description, and desired tone.
     """
     today = date.today().strftime("%B %d, %Y")
-    
+
     system_message = f"""
     You are an expert cover letter writer with years of experience in HR and recruitment. 
     Your task is to create a compelling, personalized cover letter based on the candidate's resume, the job description provided, and the specific candidate information given. 
@@ -170,7 +192,7 @@ def generate_cover_letter(resume, job_description, cover_letter_info, tone='prof
     5. Adjust the tone to be {tone}.
     6. Do not include any salutation, contact information, or closing in the body of the letter
     """
-    
+
     user_message = f"""
     Please write a cover letter based on the following information:
 
@@ -186,7 +208,7 @@ def generate_cover_letter(resume, job_description, cover_letter_info, tone='prof
 
     Provide only the body of the cover letter, without any salutation or closing.
     """
-    
+
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
@@ -196,12 +218,25 @@ def generate_cover_letter(resume, job_description, cover_letter_info, tone='prof
             ],
             temperature=0.5
         )
-        
+
         cover_letter_content = response.choices[0].message.content
-        
+
         # Format the cover letter with the correct header, date, and salutation
-        formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Address']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n\n{today}\n\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}\n\nSincerely,\n{cover_letter_info['Full Name']}"
-        
+        formatted_cover_letter = f"""{cover_letter_info['Full Name']}
+{cover_letter_info['Address']}
+{cover_letter_info['Phone']}
+{cover_letter_info['Email']}
+
+{today}
+
+Dear {cover_letter_info['Company Name']} Hiring Team,
+
+{cover_letter_content}
+
+Sincerely,
+{cover_letter_info['Full Name']}
+"""
+
         return formatted_cover_letter
     except openai.error.OpenAIError as e:
         print(f"OpenAI API error: {e}")
@@ -216,12 +251,12 @@ def generate_follow_up_message(resume, job_description, cover_letter_info, custo
     Your task is to create a professional and concise follow-up message based on the candidate's resume, 
     the job description, and any customization provided by the user.
     """
-    
+
     if custom_message:
         custom = f"Custom Message (if any):\n{custom_message}"
     else:
         custom = "Custom Message (if any):\nI am writing to follow up on my application for the [Job Title] position. I am very enthusiastic about the opportunity to contribute to [Company Name] and would like to inquire about the status of my application."
-    
+
     user_prompt = f"""
     Candidate Information:
     Full Name: {cover_letter_info['Full Name']}
@@ -237,7 +272,7 @@ def generate_follow_up_message(resume, job_description, cover_letter_info, custo
 
     Please generate a professional follow-up message.
     """
-    
+
     try:
         response = openai.ChatCompletion.create(
             model="gpt-4",
@@ -278,36 +313,49 @@ def create_pdf(content, filename):
     """
     pdf = PDF(format='Letter')
     pdf.add_page()
-    
+
+    # Define the path to the fonts directory
+    fonts_dir = os.path.join(os.path.dirname(__file__), 'fonts')
+
+    # Verify that font files exist
+    regular_font_path = os.path.join(fonts_dir, 'DejaVuSansCondensed.ttf')
+    bold_font_path = os.path.join(fonts_dir, 'DejaVuSansCondensed-Bold.ttf')
+
+    if not os.path.isfile(regular_font_path) or not os.path.isfile(bold_font_path):
+        raise FileNotFoundError(
+            "Font files not found. Please ensure 'DejaVuSansCondensed.ttf' and "
+            "'DejaVuSansCondensed-Bold.ttf' are present in the 'fonts' directory."
+        )
+
     # Add Unicode fonts (regular and bold)
-    pdf.add_font('DejaVu', '', 'fonts/DejaVuSansCondensed.ttf', uni=True)
-    pdf.add_font('DejaVu', 'B', 'fonts/DejaVuSansCondensed-Bold.ttf', uni=True)
-    
-    if filename == "cover_letter.pdf" or filename == "follow_up_message.pdf":
+    pdf.add_font('DejaVu', '', regular_font_path, uni=True)
+    pdf.add_font('DejaVu', 'B', bold_font_path, uni=True)
+
+    if filename.lower() in ["cover_letter.pdf", "follow_up_message.pdf"]:
         # Cover letter and Follow-Up message specific formatting
         left_margin = 25.4  # 1 inch
         right_margin = 25.4  # 1 inch
         top_margin = 25.4  # 1 inch
         pdf.set_margins(left_margin, top_margin, right_margin)
-        
+
         pdf.set_auto_page_break(auto=True, margin=25.4)  # 1 inch bottom margin
-        
+
         # Calculate effective page width (accounting for margins)
         effective_page_width = pdf.w - left_margin - right_margin
-        
+
         # Set font for body text
         pdf.set_font("DejaVu", '', 11)
-        
+
         # Split content into paragraphs
         paragraphs = content.split('\n\n')
-        
+
         # Process contact information
         contact_info = paragraphs[0].split('\n')
         for line in contact_info:
             pdf.set_x(left_margin)  # Ensure consistent left alignment
             pdf.cell(0, 5, line.strip(), ln=True, align='L')
         pdf.ln(5)
-        
+
         # Process date and salutation
         if len(paragraphs) > 1:
             date_salutation = paragraphs[1].split('\n')
@@ -318,7 +366,7 @@ def create_pdf(content, filename):
                 # Salutation on the left
                 pdf.cell(0, 5, date_salutation[1].strip(), ln=True)
             pdf.ln(5)
-        
+
         # Process the body of the letter
         for paragraph in paragraphs[2:]:
             pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
@@ -330,31 +378,37 @@ def create_pdf(content, filename):
         right_margin = 20
         top_margin = 20
         pdf.set_margins(left_margin, top_margin, right_margin)
-        
+
         pdf.set_auto_page_break(auto=True, margin=15)  # Bottom margin
-        
+
         # Calculate effective page width (accounting for margins)
         effective_page_width = pdf.w - left_margin - right_margin
-        
+
         # Split content into main sections
-        main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
-        
+        main_sections = re.split(
+            r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', 
+            content
+        )
+
         # Process the header section (name, telephone, address, email)
         pdf.set_font("DejaVu", 'B', 16)  # Set to bold, larger font for the name
         header_lines = main_sections[0].split('\n')
-        header_info = "  ".join([line.split(": ", 1)[-1] for line in header_lines if ": " in line])
-        
+        header_info = "  ".join([
+            line.split(": ", 1)[-1] for line in header_lines 
+            if ": " in line
+        ])
+
         # Center the header
         pdf.cell(0, 10, header_info, ln=True, align='C')
-        
+
         # Add extra spacing after the header
         pdf.ln(5)
-        
+
         # Add a line after the header
         pdf.set_line_width(0.5)
         pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
         pdf.ln(10)
-        
+
         # Process the rest of the sections
         for section in main_sections[1:]:
             if section.startswith("SKILLS & EXPERIENCE"):
@@ -423,19 +477,19 @@ We are seeking a highly skilled Software Engineer to join our dynamic team at In
     analysis = analyze_resume_and_job(example_resume, example_job_description)
     if analysis:
         header, summary, skills_comparison, education, work_experience, cover_letter_info, ats_keywords = analysis
-        
+
         # Generate full resume
         full_resume = generate_full_resume(header, summary, skills_comparison, education, work_experience, cover_letter_info['Company Name'])
         print("Full Resume:\n", full_resume)
-        
+
         # Generate cover letter with selected tone
         cover_letter = generate_cover_letter(full_resume, example_job_description, cover_letter_info, tone='confident')
         print("\nCover Letter:\n", cover_letter)
-        
+
         # Generate follow-up message
         follow_up = generate_follow_up_message(example_resume, example_job_description, cover_letter_info)
         print("\nFollow-Up Message:\n", follow_up)
-        
+
         # Create PDFs
         create_pdf(full_resume, "resume.pdf")
         create_pdf(cover_letter, "cover_letter.pdf")
