@@ -8,7 +8,7 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write candidate's skill in a sentence to best match Job Requirements statement. Include the company name from the job description before "Job Requirements".
+    3. A detailed comparison of the candidate's skills and the job requirements, categorized into Technical Skills, Soft Skills, Experience, and Qualifications. For each category, list at least 5 key points that match the job requirements. Provide a brief explanation for each match.
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
@@ -32,12 +32,25 @@ def analyze_resume_and_job(resume, job_description):
     [Custom summary here]
 
     COMPARISON:
-    [Your Skills & Experience]|[Company Name Job Requirements]
-    Skill/Experience 1|Requirement 1
-    Skill/Experience 2|Requirement 2
-    Skill/Experience 3|Requirement 3
-    Skill/Experience 4|Requirement 4
-    Skill/Experience 5|
+    **Technical Skills**
+    - Skill 1: [Explanation]
+    - Skill 2: [Explanation]
+    - Skill 3: [Explanation]
+
+    **Soft Skills**
+    - Skill 1: [Explanation]
+    - Skill 2: [Explanation]
+    - Skill 3: [Explanation]
+
+    **Experience**
+    - Experience 1: [Explanation]
+    - Experience 2: [Explanation]
+    - Experience 3: [Explanation]
+
+    **Qualifications**
+    - Qualification 1: [Explanation]
+    - Qualification 2: [Explanation]
+    - Qualification 3: [Explanation]
 
     EDUCATION:
     [Summarized education information]
@@ -74,9 +87,20 @@ def process_gpt_output(output):
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
     
-    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
-    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
-    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    comparison_section = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip()
+    # Parse each category
+    technical_skills = re.findall(r'\*\*Technical Skills\*\*\n((?:- .+\n?)+)', comparison_section)
+    soft_skills = re.findall(r'\*\*Soft Skills\*\*\n((?:- .+\n?)+)', comparison_section)
+    experience = re.findall(r'\*\*Experience\*\*\n((?:- .+\n?)+)', comparison_section)
+    qualifications = re.findall(r'\*\*Qualifications\*\*\n((?:- .+\n?)+)', comparison_section)
+    
+    def parse_skills(skills_raw):
+        return [skill.strip() for skill in skills_raw[0].split('- ')[1:] if skill]
+
+    technical_skills = parse_skills(technical_skills) if technical_skills else []
+    soft_skills = parse_skills(soft_skills) if soft_skills else []
+    experience = parse_skills(experience) if experience else []
+    qualifications = parse_skills(qualifications) if qualifications else []
     
     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
@@ -84,11 +108,20 @@ def process_gpt_output(output):
     cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
-    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
+    return header, summary, {
+        'Technical Skills': technical_skills,
+        'Soft Skills': soft_skills,
+        'Experience': experience,
+        'Qualifications': qualifications
+    }, education, work_experience, cover_letter_info
 
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
-    skills, requirements = skills_comparison
-    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    comparison = ""
+    for category, items in skills_comparison.items():
+        comparison += f"**{category}**\n"
+        for item in items:
+            comparison += f"- {item}\n"
+        comparison += "\n"
     
     full_resume = f"""
 {header}
@@ -96,7 +129,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
+COMPARISON
 {comparison}
 
 EDUCATION
@@ -229,7 +262,7 @@ def create_pdf(content, filename):
         effective_page_width = pdf.w - left_margin - right_margin
         
         # Split content into main sections
-        main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
+        main_sections = re.split(r'\n\n(?=SUMMARY|COMPARISON|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
         
         # Process the header section (name, telephone, address, email)
         pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
@@ -265,46 +298,17 @@ def create_pdf(content, filename):
         # Process the rest of the sections
         pdf.set_font("DejaVu", '', 11)
         for i, section in enumerate(main_sections[1:], 1):
-            if section.startswith("SKILLS & EXPERIENCE"):
+            if section.startswith("COMPARISON"):
                 pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                col_width = effective_page_width / 2
-                
-                # Extract company name and job requirements header
-                company_job_req = section.split('\n')[0].split('|')[1].strip()
-                
-                # Write both headers on the same line with personalization (swapped order)
-                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
-                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
-                pdf.ln(2)
-                
-                pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-                
-                lines = section.split('\n')[1:]  # Skip the header line
-                
-                max_y = pdf.get_y()
-                first_item = True
-                item_number = 1
-                for line in lines:
-                    if '|' in line:
-                        left, right = line.split('|')
-                        if first_item:
-                            first_item = False
-                            continue  # Skip the first item as it's redundant
-                        pdf.set_xy(left_margin, max_y)
-                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + right.strip(), align='L')  # Job Requirements (left column)
-                        new_y = pdf.get_y()
-                        
-                        pdf.set_xy(left_margin + col_width, max_y)
-                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + left.strip(), align='L')  # Matching Skills (right column)
-                        
-                        max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
-                        item_number += 1
-                    else:
-                        pdf.set_xy(left_margin, max_y)
-                        pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
-                        max_y = pdf.get_y() + 2
-                
-                pdf.set_y(max_y)
+                # Extract each category
+                categories = re.findall(r'\*\*(.*?)\*\*\n((?:- .+\n?)+)', section)
+                for category, items in categories:
+                    pdf.set_font("DejaVu", 'B', 11)
+                    pdf.multi_cell(0, 5, f"{category}", ln=True)
+                    pdf.set_font("DejaVu", '', 11)
+                    for item in items.strip().split('\n'):
+                        pdf.multi_cell(0, 5, item, ln=True)
+                    pdf.ln(2)
             else:
                 pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
                 pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
@@ -322,11 +326,11 @@ def create_pdf(content, filename):
 
 def generate_follow_up_paragraph(full_resume, cover_letter):
     system_message = """
-    You are a creative writer tasked with crafting a concise, upbeat, and witty follow-up paragraph that complements the provided resume and cover letter. The tone should remain professional, avoiding dad jokes unless they're genuinely funny. The paragraph should encourage the reader to take the next step, such as contacting the candidate for an interview.
+    You are a professional writer tasked with crafting a concise, friendly follow-up paragraph that complements the provided resume and cover letter. The tone should be upbeat and witty without excessive sarcasm. If a joke is included, it should be relevant to the HR department. The paragraph should express genuine interest in the position and encourage the reader to take the next step.
     """
 
     user_message = f"""
-    Based on the following resume and cover letter, write a short follow-up paragraph that can be added to the application. Ensure it sounds like it's written by me.
+    Based on the following resume and cover letter, write a short follow-up paragraph to be added to my application. Ensure it sounds like it's written by me.
 
     Resume:
     {full_resume}
