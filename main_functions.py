@@ -150,19 +150,19 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     
     return formatted_cover_letter
 
-def generate_follow_up_paragraph(resume, job_description):
+def generate_follow_up_paragraph(full_resume, cover_letter):
     system_message = """
-    You are a creative and professional content generator. Your task is to write an upbeat and witty follow-up paragraph that complements the user's tailored resume and cover letter. The paragraph should be concise, engaging, and include relevant details based on the provided resume and job description.
+    You are an assistant helping [Your Name] generate a follow-up paragraph for their job application materials. The paragraph should be upbeat, witty, yet professional, providing an insightful summary or additional information that complements the resume and cover letter. Ensure the tone reflects [Your Name]'s personal writing style.
     """
 
     user_message = f"""
-    Based on the following resume and job description, generate an upbeat and witty follow-up paragraph that complements the tailored resume and cover letter. The tone should be professional yet engaging.
+    Based on the following resume and cover letter, please generate a concise follow-up paragraph that can be added to the application's UI. The paragraph should be upbeat, witty, yet professional, and complement the existing materials.
 
     Resume:
-    {resume}
+    {full_resume}
 
-    Job Description:
-    {job_description}
+    Cover Letter:
+    {cover_letter}
     """
 
     response = openai.ChatCompletion.create(
@@ -342,5 +342,8 @@ def create_pdf(content, filename):
                 pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
                 pdf.ln(3)
 
+
     pdf.output(filename)
 
+def sanitize_for_pdf(text):
+    return ''.join(char for char in text if ord(char) < 128)
