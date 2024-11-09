@@ -1,223 +1,380 @@
-import streamlit as st
 import openai
-from PIL import Image
-from main_functions import (
-    analyze_resume_and_job,
-    generate_full_resume,
-    generate_cover_letter,
-    generate_follow_up_message,
-    create_pdf
-)
-import os
+import re
+from fpdf import FPDF
+from datetime import date
 
-# Set up OpenAI API key
-openai.api_key = st.secrets["openai_api_key"]
+def analyze_resume_and_job(resume, job_description):
+    system_message = """
+    You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
+    1. A tailored header for the resume, including the candidate's name and key contact information.
+    2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comprable to Jog Requirements, and write candidate's skill in a sentence to best match Job Requirements statement.Include the company name from the job description before "Job Requirements".
+    4. Extract and summarize the candidate's education information.
+    5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
+    6. Extract the full name, address, email, and phone number for use in a cover letter.
+    7. Extract the company name from the job description for use in the cover letter greeting.
+    """
 
-st.set_page_config(page_title="AI Resume Tailor", page_icon="📄", layout="wide")
+    user_message = f"""
+    Please analyze the following resume and job description:
 
-# Load and display the logo alongside the title
-col1, col2 = st.columns([1, 12])
-with col1:
-    try:
-        logo_path = os.path.join(os.path.dirname(__file__), "logo.png")
-        logo = Image.open(logo_path)
-        st.image(logo, width=100)
-    except FileNotFoundError:
-        st.warning("Logo image not found. Please ensure 'logo.png' is in the project directory.")
-with col2:
-    st.title("AI Resume Tailor")
+    Resume:
+    {resume}
 
-# Initialize session state
-if 'generated' not in st.session_state:
-    st.session_state.generated = False
-if 'resume_data' not in st.session_state:
-    st.session_state.resume_data = None
+    Job Description:
+    {job_description}
 
-def sanitize_for_pdf(text):
-    return ''.join(char for char in text if ord(char) < 128)
+    Provide your analysis in the following format:
+    HEADER:
+    [Tailored header here]
 
-col1, col2 = st.columns(2)
-with col1:
-    resume = st.text_area("Paste your resume here", height=300)
-with col2:
-    job_description = st.text_area("Paste the job description here", height=300)
+    SUMMARY:
+    [Custom summary here]
 
-def generate_resume():
-    if resume and job_description:
-        try:
-            with st.spinner("Analyzing and tailoring your resume..."):
-                analysis = analyze_resume_and_job(resume, job_description)
-                if analysis:
-                    header, summary, comparison, education, work_experience, cover_letter_info, ats_keywords = analysis
-                    company_name = cover_letter_info['Company Name']
-                    full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
-                    
-                    st.session_state.resume_data = {
-                        'header': header,
-                        'summary': summary,
-                        'comparison': comparison,
-                        'education': education,
-                        'work_experience': work_experience,
-                        'full_resume': full_resume,
-                        'cover_letter_info': cover_letter_info,
-                        'ats_keywords': ats_keywords
-                    }
-                    st.session_state.generated = True
-                else:
-                    st.error("Failed to analyze the resume and job description.")
-        except Exception as e:
-            st.error(f"An error occurred during generation: {str(e)}")
+    COMPARISON:
+    [Your Skills & Experience]|[Company Name Job Requirements]
+    Skill/Experience 1|Requirement 1
+    Skill/Experience 2|Requirement 2
+    Skill/Experience 3|Requirement 3
+    Skill/Experience 4|Requirement 4
+    Skill/Experience 5|Requirement 5
+
+    EDUCATION:
+    [Summarized education information]
+
+    RELEVANT WORK EXPERIENCE:
+    [Summarized relevant work experience 1]
+
+    [Summarized relevant work experience 2]
+
+    [Summarized relevant work experience 3]
+
+    COVER LETTER INFO:
+    Full Name: [Extracted full name]
+    Address: [Extracted address]
+    Email: [Extracted email]
+    Phone: [Extracted phone number]
+    Company Name: [Extracted company name]
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    output = response.choices[0].message.content
+    return process_gpt_output(output)
+
+def process_gpt_output(output):
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:)', output)
+    
+    header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
+    summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
+    
+    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
+    
+    education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
+    work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
+    
+    cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
+    cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
+    
+    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
+    
+def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
+    skills, requirements = skills_comparison
+    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
+    
+    full_resume = f"""
+{header}
+
+SUMMARY
+{summary}
+
+SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
+{comparison}
+
+EDUCATION
+{education}
+
+RELEVANT WORK EXPERIENCE
+{work_experience}
+"""
+    return full_resume
+
+def generate_cover_letter(resume, job_description, cover_letter_info):
+    today = date.today().strftime("%B %d, %Y")
+    
+    system_message = """
+    You are an expert cover letter writer with years of experience in HR and recruitment. Your task is to create a compelling, personalized cover letter based on the candidate's resume, the job description provided, and the specific candidate information given. The cover letter should:
+    1. Highlight the candidate's most relevant skills and experiences for the specific job
+    2. Show enthusiasm for the position and company
+    3. Be concise, typically not exceeding one page
+    4. Encourage the employer to review the attached resume and consider the candidate for an interview
+    5. Do not include any salutation, contact information, or closing in the body of the letter
+    """
+
+    user_message = f"""
+    Please write a cover letter based on the following information:
+
+    Candidate Information:
+    Full Name: {cover_letter_info['Full Name']}
+    Company: {cover_letter_info['Company Name']}
+
+    Resume:
+    {resume}
+
+    Job Description:
+    {job_description}
+
+    Provide only the body of the cover letter, without any salutation or closing.
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    cover_letter_content = response.choices[0].message.content
+    
+    # Format the cover letter with the correct header, date, and salutation
+    formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Address']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n\n{today}\n\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}\n\nSincerely,\n{cover_letter_info['Full Name']}"
+    
+    return formatted_cover_letter
+
+class PDF(FPDF):
+    def header(self):
+        # No header for resume
+        pass
+
+    def footer(self):
+        # No footer for resume
+        pass
+
+    def multi_cell_aligned(self, w, h, txt, border=0, align='J', fill=False, ln=1):
+        # Custom method to create a multi-cell with specified alignment
+        self.multi_cell(w, h, txt, border, align, fill)
+        if ln == 1:
+            self.ln(h)
+        elif ln == 2:
+            self.ln(2*h)
+
+def create_pdf(content, filename):
+    pdf = PDF(format='Letter')
+    pdf.add_page()
+    
+    # Add Unicode fonts (regular and bold)
+    pdf.add_font('DejaVu', '', 'DejaVuSansCondensed.ttf', uni=True)
+    pdf.add_font('DejaVu', 'B', 'DejaVuSansCondensed-Bold.ttf', uni=True)
+    
+    if filename == "cover_letter.pdf":
+        # Cover letter specific formatting
+        left_margin = 25.4  # 1 inch
+        right_margin = 25.4  # 1 inch
+        top_margin = 25.4  # 1 inch
+        pdf.set_margins(left_margin, top_margin, right_margin)
+        
+        pdf.set_auto_page_break(auto=True, margin=25.4)  # 1 inch bottom margin
+        
+        # Calculate effective page width (accounting for margins)
+        effective_page_width = pdf.w - left_margin - right_margin
+        
+        # Set font for body text
+        pdf.set_font("DejaVu", '', 11)
+        
+        # Split cover letter into paragraphs
+        paragraphs = content.split('\n\n')
+        
+        # Process contact information
+        contact_info = paragraphs[0].split('\n')
+        for line in contact_info:
+            pdf.set_x(left_margin)  # Ensure consistent left alignment
+            pdf.cell(0, 5, line.strip(), ln=True, align='L')
+        pdf.ln(5)
+        
+        # contact_info = paragraphs[0].split('\n')
+        # for line in contact_info:
+        #     pdf.cell(0, 5, line.strip(), ln=True)
+        # pdf.ln(5)
+        
+        # Process date and salutation
+        if len(paragraphs) > 1:
+            date_salutation = paragraphs[1].split('\n')
+            if len(date_salutation) >= 2:
+                # Date on the right
+                pdf.cell(effective_page_width, 5, date_salutation[0].strip(), align='R', ln=True)
+                pdf.ln(5)
+                # Salutation on the left
+                pdf.cell(0, 5, date_salutation[1].strip(), ln=True)
+            pdf.ln(5)
+        
+        # Process the body of the letter
+        for paragraph in paragraphs[2:]:
+            pdf.multi_cell(effective_page_width, 5, paragraph.strip(), align='J')
+            pdf.ln(5)
+           
     else:
-        st.warning("Please provide both your resume and the job description.")
-
-if st.button("Analyze and Tailor Resume"):
-    generate_resume()
-
-if st.session_state.generated:
-    data = st.session_state.resume_data
-    
-    st.subheader("ATS Keywords Extracted")
-    st.info(", ".join(data['ats_keywords']))
-    
-    st.subheader("Tailored Header")
-    st.info(data['header'])
-    
-    st.subheader("Custom Summary")
-    st.success(data['summary'])
-    
-    st.subheader("Skills Comparison")
-    comp_col1, comp_col2 = st.columns(2)
-    with comp_col1:
-        st.markdown("**Your Skills & Experience**")
-        for skill in data['comparison'][0]:
-            st.write(f"• {skill}")
-    with comp_col2:
-        st.markdown("**Job Requirements**")
-        for req in data['comparison'][1]:
-            st.write(f"• {req}")
-    
-    st.subheader("Education")
-    st.write(data['education'])
-    
-    st.subheader("Relevant Work Experience")
-    st.write(data['work_experience'])
-    
-    st.subheader("Complete Tailored Resume")
-    st.text_area("Copy and edit your tailored resume:", data['full_resume'], height=400)
-    st.info("Please review and edit the generated resume to ensure all information is accurate and fits on one page. You may need to adjust the work experience and education sections.")
-    
-    # Cover Letter Section
-    st.subheader("Generate Cover Letter")
-    cover_letter_col1, cover_letter_col2 = st.columns([1, 1])
-    with cover_letter_col1:
-        tone = st.selectbox(
-            "Select Cover Letter Tone",
-            options=["professional", "confident", "enthusiastic", "witty"],
-            index=0
-        )
-    with cover_letter_col2:
-        generate_cl = st.button("Generate Cover Letter")
-    
-    if generate_cl:
-        with st.spinner("Generating cover letter..."):
-            cover_letter = generate_cover_letter(
-                resume=data['full_resume'],
-                job_description=job_description,
-                cover_letter_info=data['cover_letter_info'],
-                tone=tone
-            )
-            if cover_letter:
-                data['cover_letter'] = cover_letter
-                st.session_state.resume_data = data
-                st.success("Cover letter generated successfully!")
+        # Existing resume PDF generation code (with modifications)
+        left_margin = 20
+        right_margin = 20
+        top_margin = 20
+        pdf.set_margins(left_margin, top_margin, right_margin)
+        
+        pdf.set_auto_page_break(auto=True, margin=15)  # Bottom margin
+        
+        # Calculate effective page width (accounting for margins)
+        effective_page_width = pdf.w - left_margin - right_margin
+        
+        # Split content into main sections
+        main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
+        
+        # Process the header section (name, telephone, address, email)
+        pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
+        header_lines = main_sections[0].split('\n')
+        header_info = "  ".join([line.split(": ", 1)[-1] for line in header_lines])
+        
+        # Extract first name from the header
+        first_name = header_info.split()[0]
+        
+        # Center the header between left and right margins
+        header_width = pdf.get_string_width(header_info)
+        if header_width > effective_page_width:
+            # If header is too wide, reduce font size
+            font_size = 12
+            while header_width > effective_page_width and font_size > 9:
+                font_size -= 0.5
+                pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
+                header_width = pdf.get_string_width(header_info)
+        
+        # Calculate the center position and shift it slightly to the left
+        x_position = (pdf.w - header_width) / 2 - pdf.get_string_width("  ")
+        pdf.set_x(x_position)
+        
+        pdf.cell(header_width, 6, header_info, align='C', ln=True)
+        
+        # Add extra spacing after the header
+        pdf.ln(10)
+        
+        # Add a line after the header
+        pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+        pdf.ln(3)
+        
+        # Process the rest of the sections
+        pdf.set_font("DejaVu", '', 11)
+        for i, section in enumerate(main_sections[1:], 1):
+            if section.startswith("SKILLS & EXPERIENCE"):
+                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+                col_width = effective_page_width / 2
+                
+                # Extract company name and job requirements header
+                company_job_req = section.split('\n')[0].split('|')[1].strip()
+                
+                # Write both headers on the same line with personalization (swapped order)
+                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+                pdf.ln(2)
+                
+                pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+                
+                lines = section.split('\n')[1:]  # Skip the header line
+                
+                max_y = pdf.get_y()
+                first_item = True
+                item_number = 1
+                for line in lines:
+                    if '|' in line:
+                        left, right = line.split('|')
+                        if first_item:
+                            first_item = False
+                            continue  # Skip the first item as it's redundant
+                        pdf.set_xy(left_margin, max_y)
+                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + right.strip(), align='L')  # Job Requirements (left column)
+                        new_y = pdf.get_y()
+                        
+                        pdf.set_xy(left_margin + col_width, max_y)
+                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + left.strip(), align='L')  # Matching Skills (right column)
+                        
+                        max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
+                        item_number += 1
+                    else:
+                        pdf.set_xy(left_margin, max_y)
+                        pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
+                        max_y = pdf.get_y() + 2
+                
+                pdf.set_y(max_y)
             else:
-                st.error("Failed to generate cover letter.")
+                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+                pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
+                pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+                pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
+            
+            if i < len(main_sections) - 1:
+                pdf.ln(3)
+                pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+                pdf.ln(3)
+
+
+    pdf.output(filename)
+     
+    #     for i, section in enumerate(main_sections[1:], 1):
+    #         if section.startswith("SKILLS & EXPERIENCE"):
+    #             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+    #             col_width = effective_page_width / 2
+                
+    #             # Extract company name and job requirements header
+    #             company_job_req = section.split('\n')[0].split('|')[1].strip()
+                
+    #             # Write both headers on the same line with personalization (swapped order)
+    #             pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+    #             pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
+    #             #pdf.cell(col_width, 5, f"{first_name}'s Skills & Experience", align='L', border=0, ln=True)
+    #             pdf.ln(2)
+                
+    #             pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+                
+    #             lines = section.split('\n')[1:]  # Skip the header line
+                
+    #             max_y = pdf.get_y()
+    #             first_item = True
+    #             for line in lines:
+    #                 if '|' in line:
+    #                     left, right = line.split('|')
+    #                     if first_item:
+    #                         first_item = False
+    #                         continue  # Skip the first item as it's redundant
+    #                     pdf.set_xy(left_margin, max_y)
+    #                     pdf.multi_cell(col_width - 2, 5, "• " + right.strip(), align='L')  # Job Requirements (left column)
+    #                     new_y = pdf.get_y()
+                        
+    #                     pdf.set_xy(left_margin + col_width, max_y)
+    #                     pdf.multi_cell(col_width - 2, 5, "• " + left.strip(), align='L')  # Your Skills & Experience (right column)
+                        
+    #                     max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
+    #                 else:
+    #                     pdf.set_xy(left_margin, max_y)
+    #                     pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
+    #                     max_y = pdf.get_y() + 2
+                
+    #             pdf.set_y(max_y)
+    #         else:
+    #             pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+    #             pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
+    #             pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+    #             pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
+            
+    #         if i < len(main_sections) - 1:
+    #             pdf.ln(3)
+    #             pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
+    #             pdf.ln(3)
     
-    if 'cover_letter' in data:
-        st.subheader("Cover Letter")
-        st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
-    
-    # Follow-Up Message Section
-    st.subheader("Generate Follow-Up Message")
-    follow_up_option = st.checkbox("Generate Follow-Up Message")
-    if follow_up_option:
-        custom_follow_up = st.text_area("Customize your Follow-Up Message (optional)", height=100)
-        follow_up_col1, follow_up_col2 = st.columns([1, 1])
-        with follow_up_col1:
-            generate_fu = st.button("Generate Follow-Up Message")
-        if generate_fu:
-            with st.spinner("Generating follow-up message..."):
-                follow_up_message = generate_follow_up_message(
-                    resume=resume,
-                    job_description=job_description,
-                    cover_letter_info=data['cover_letter_info'],
-                    custom_message=custom_follow_up if custom_follow_up else None
-                )
-                if follow_up_message:
-                    data['follow_up_message'] = follow_up_message
-                    st.session_state.resume_data = data
-                    st.success("Follow-up message generated successfully!")
-                else:
-                    st.error("Failed to generate follow-up message.")
-    
-    if 'follow_up_message' in data:
-        st.subheader("Follow-Up Message")
-        st.text_area("Copy your follow-up message:", data['follow_up_message'], height=200)
-    
-        # Optionally, allow downloading the follow-up message as PDF
-        with st.expander("Download Follow-Up Message as PDF"):
-            try:
-                create_pdf(sanitize_for_pdf(data['follow_up_message']), "follow_up_message.pdf")
-                with open("follow_up_message.pdf", "rb") as pdf_file:
-                    PDFbyte = pdf_file.read()
-                st.download_button(
-                    label="Download Follow-Up Message PDF",
-                    data=PDFbyte,
-                    file_name="follow_up_message.pdf",
-                    mime='application/octet-stream'
-                )
-            except Exception as e:
-                st.error(f"An error occurred while creating the follow-up PDF: {str(e)}")
-    
-    # Generate PDF downloads for Resume and Cover Letter
-    if 'cover_letter' in data:
-        st.subheader("Download Documents as PDF")
-        pdf_col1, pdf_col2, pdf_col3 = st.columns(3)
-        with pdf_col1:
-            try:
-                create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
-                with open("tailored_resume.pdf", "rb") as pdf_file:
-                    PDFbyte = pdf_file.read()
-                st.download_button(
-                    label="Download Resume PDF",
-                    data=PDFbyte,
-                    file_name="tailored_resume.pdf",
-                    mime='application/octet-stream'
-                )
-            except Exception as e:
-                st.error(f"An error occurred while creating the resume PDF: {str(e)}")
-        
-        with pdf_col2:
-            try:
-                create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
-                with open("cover_letter.pdf", "rb") as pdf_file:
-                    PDFbyte = pdf_file.read()
-                st.download_button(
-                    label="Download Cover Letter PDF",
-                    data=PDFbyte,
-                    file_name="cover_letter.pdf",
-                    mime='application/octet-stream'
-                )
-            except Exception as e:
-                st.error(f"An error occurred while creating the cover letter PDF: {str(e)}")
-        
-        # Follow-Up Message PDF is handled above
-    
-    # Start Over Button
-    if st.button("Start Over"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
-        st.experimental_rerun()
-    
-    st.markdown("---")
-    st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
+    # pdf.output(filename)
+
+
