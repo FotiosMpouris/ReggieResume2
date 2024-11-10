@@ -1,7 +1,13 @@
 import streamlit as st
 import openai
 from PIL import Image
-from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf, generate_follow_up_paragraph
+from main_functions import (
+    analyze_resume_and_job,
+    generate_full_resume,
+    generate_cover_letter,
+    create_pdf,
+    generate_follow_up_paragraph
+)
 
 # Set up OpenAI API key
 openai.api_key = st.secrets["openai_api_key"]
@@ -22,7 +28,7 @@ if 'generated' not in st.session_state:
 if 'resume_data' not in st.session_state:
     st.session_state.resume_data = None
 if 'follow_up' not in st.session_state:
-    st.session_state.follow_up = None
+    st.session_state.follow_up = ""
 
 def sanitize_for_pdf(text):
     return ''.join(char for char in text if ord(char) < 128)
@@ -41,7 +47,9 @@ def generate_resume():
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
-                follow_up = generate_follow_up_paragraph(full_resume, cover_letter)
+                
+                # Generate follow-up paragraph
+                follow_up = generate_follow_up_paragraph(summary)
                 
                 st.session_state.resume_data = {
                     'header': header,
@@ -71,6 +79,9 @@ if st.session_state.generated:
     st.subheader("Custom Summary")
     st.success(data['summary'])
     
+    st.subheader("Follow-Up Paragraph")
+    st.info(st.session_state.follow_up)
+    
     st.subheader("Skills Comparison")
     comp_col1, comp_col2 = st.columns(2)
     with comp_col1:
@@ -94,16 +105,16 @@ if st.session_state.generated:
     
     st.subheader("Cover Letter")
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
-    
+
     st.subheader("Follow-Up Paragraph")
-    st.text_area("Your Follow-Up Paragraph:", st.session_state.follow_up, height=150)
+    st.text_area("Your Follow-Up Paragraph:", st.session_state.follow_up, height=100)
     
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
         create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
 
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
                 PDFbyte = pdf_file.read()
@@ -119,17 +130,8 @@ if st.session_state.generated:
                                data=PDFbyte,
                                file_name="cover_letter.pdf",
                                mime='application/octet-stream')
-        
-        with col3:
-            # Create a simple text file for the follow-up paragraph
-            follow_up_content = st.session_state.follow_up
-            follow_up_bytes = follow_up_content.encode('utf-8')
-            st.download_button(label="Download Follow-Up Paragraph",
-                               data=follow_up_bytes,
-                               file_name="follow_up_paragraph.txt",
-                               mime='text/plain')
     except Exception as e:
-        st.error(f"An error occurred while creating downloads: {str(e)}")
+        st.error(f"An error occurred while creating PDFs: {str(e)}")
 
 if st.button("Start Over"):
     for key in list(st.session_state.keys()):
