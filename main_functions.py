@@ -2,63 +2,13 @@ import openai
 import re
 from fpdf import FPDF
 from datetime import date
-from collections import Counter
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-
-# Ensure NLTK resources are downloaded
-nltk.download('punkt')
-nltk.download('stopwords')
-
-def extract_keywords(job_description):
-    """
-    Extracts the top 20 most common keywords from the job description,
-    excluding common stopwords.
-    """
-    # Tokenize the job description
-    tokens = word_tokenize(job_description.lower())
-    # Remove stopwords and non-alphabetic tokens
-    stop_words = set(stopwords.words('english'))
-    keywords = [word for word in tokens if word.isalpha() and word not in stop_words]
-    # Get the most common words as keywords
-    common_keywords = [word for word, freq in Counter(keywords).most_common(20)]
-    return common_keywords
-
-def match_keywords(resume, job_description):
-    """
-    Matches extracted keywords from the job description against the resume.
-    Returns lists of matched and missing keywords.
-    """
-    keywords = extract_keywords(job_description)
-    matched_keywords = [word for word in keywords if word.lower() in resume.lower()]
-    missing_keywords = [word for word in keywords if word.lower() not in resume.lower()]
-    return matched_keywords, missing_keywords
-
-def provide_ats_tips(matched_keywords, missing_keywords):
-    """
-    Provides ATS optimization tips based on matched and missing keywords.
-    """
-    tips = []
-    if missing_keywords:
-        tips.append("🔑 **ATS Optimization Tips:**")
-        tips.append("Consider incorporating the following keywords to improve ATS compatibility:")
-        for word in missing_keywords:
-            tips.append(f"- {word}")
-    else:
-        tips.append("🎉 **Great Job!** Your resume is well-optimized for ATS.")
-    return "\n".join(tips)
 
 def analyze_resume_and_job(resume, job_description):
-    """
-    Analyzes the resume and job description to extract tailored sections,
-    including ATS keyword matching.
-    """
     system_message = """
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed comparison of the candidate's skills and the job requirements, categorized into Technical Skills, Soft Skills, Experience, and Qualifications. For each category, list at least 5 key points that match the job requirements. Provide a brief explanation for each match.
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write candidate's skill in a sentence to best match Job Requirements statement. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
@@ -82,33 +32,12 @@ def analyze_resume_and_job(resume, job_description):
     [Custom summary here]
 
     COMPARISON:
-    **Technical Skills**
-    - Skill 1: [Explanation]
-    - Skill 2: [Explanation]
-    - Skill 3: [Explanation]
-    - Skill 4: [Explanation]
-    - Skill 5: [Explanation]
-
-    **Soft Skills**
-    - Skill 1: [Explanation]
-    - Skill 2: [Explanation]
-    - Skill 3: [Explanation]
-    - Skill 4: [Explanation]
-    - Skill 5: [Explanation]
-
-    **Experience**
-    - Experience 1: [Explanation]
-    - Experience 2: [Explanation]
-    - Experience 3: [Explanation]
-    - Experience 4: [Explanation]
-    - Experience 5: [Explanation]
-
-    **Qualifications**
-    - Qualification 1: [Explanation]
-    - Qualification 2: [Explanation]
-    - Qualification 3: [Explanation]
-    - Qualification 4: [Explanation]
-    - Qualification 5: [Explanation]
+    [Your Skills & Experience]|[Company Name Job Requirements]
+    Skill/Experience 1|Requirement 1
+    Skill/Experience 2|Requirement 2
+    Skill/Experience 3|Requirement 3
+    Skill/Experience 4|Requirement 4
+    Skill/Experience 5|
 
     EDUCATION:
     [Summarized education information]
@@ -137,31 +66,17 @@ def analyze_resume_and_job(resume, job_description):
     )
 
     output = response.choices[0].message.content
-    return process_gpt_output(output, resume, job_description)
+    return process_gpt_output(output)
 
-def process_gpt_output(output, resume, job_description):
-    """
-    Processes the GPT output to extract different sections and perform ATS keyword matching.
-    """
+def process_gpt_output(output):
     sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:)', output)
     
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
     
-    comparison_section = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip()
-    # Parse each category
-    technical_skills = re.findall(r'\*\*Technical Skills\*\*\n((?:- .+\n?)+)', comparison_section)
-    soft_skills = re.findall(r'\*\*Soft Skills\*\*\n((?:- .+\n?)+)', comparison_section)
-    experience = re.findall(r'\*\*Experience\*\*\n((?:- .+\n?)+)', comparison_section)
-    qualifications = re.findall(r'\*\*Qualifications\*\*\n((?:- .+\n?)+)', comparison_section)
-    
-    def parse_skills(skills_raw):
-        return [skill.strip() for skill in skills_raw[0].split('- ')[1:] if skill]
-    
-    technical_skills = parse_skills(technical_skills) if technical_skills else []
-    soft_skills = parse_skills(soft_skills) if soft_skills else []
-    experience = parse_skills(experience) if experience else []
-    qualifications = parse_skills(qualifications) if qualifications else []
+    comparison_raw = re.sub(r'^COMPARISON:\s*', '', sections[2], flags=re.MULTILINE).strip().split('\n')
+    your_skills = [item.split('|')[0].strip() for item in comparison_raw if '|' in item]
+    job_requirements = [item.split('|')[1].strip() for item in comparison_raw if '|' in item]
     
     education = re.sub(r'^EDUCATION:\s*', '', sections[3], flags=re.MULTILINE).strip()
     work_experience = re.sub(r'^RELEVANT WORK EXPERIENCE:\s*', '', sections[4], flags=re.MULTILINE).strip()
@@ -169,35 +84,11 @@ def process_gpt_output(output, resume, job_description):
     cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
-    # Perform ATS keyword matching
-    matched_keywords, missing_keywords = match_keywords(resume, job_description)
-    ats_tips = provide_ats_tips(matched_keywords, missing_keywords)
-    
-    return (
-        header,
-        summary,
-        {
-            'Technical Skills': technical_skills,
-            'Soft Skills': soft_skills,
-            'Experience': experience,
-            'Qualifications': qualifications
-        },
-        education,
-        work_experience,
-        cover_letter_info,
-        ats_tips
-    )
+    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
 
-def generate_full_resume(header, summary, skills_comparison, education, work_experience, ats_tips, company_name):
-    """
-    Generates the full tailored resume with ATS optimization tips.
-    """
-    comparison = ""
-    for category, items in skills_comparison.items():
-        comparison += f"**{category}**\n"
-        for item in items:
-            comparison += f"- {item}\n"
-        comparison += "\n"
+def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
+    skills, requirements = skills_comparison
+    comparison = "\n".join([f"{skill:<50} | {req}" for skill, req in zip(skills, requirements)])
     
     full_resume = f"""
 {header}
@@ -205,7 +96,7 @@ def generate_full_resume(header, summary, skills_comparison, education, work_exp
 SUMMARY
 {summary}
 
-COMPARISON
+SKILLS & EXPERIENCE                                 | {company_name} JOB REQUIREMENTS
 {comparison}
 
 EDUCATION
@@ -213,16 +104,10 @@ EDUCATION
 
 RELEVANT WORK EXPERIENCE
 {work_experience}
-
-ATS TIPS
-{ats_tips}
 """
     return full_resume
 
 def generate_cover_letter(resume, job_description, cover_letter_info):
-    """
-    Generates a personalized cover letter based on the resume and job description.
-    """
     today = date.today().strftime("%B %d, %Y")
     
     system_message = """
@@ -265,36 +150,6 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     
     return formatted_cover_letter
 
-def generate_follow_up_paragraph(full_resume, cover_letter):
-    """
-    Generates a concise, friendly follow-up paragraph with minimal wit,
-    tailored to complement the resume and cover letter.
-    """
-    system_message = """
-    You are a professional writer tasked with crafting a concise, friendly follow-up paragraph that complements the provided resume and cover letter. The tone should be upbeat and witty without excessive sarcasm. If a joke is included, it should be relevant to the HR department. The paragraph should express genuine interest in the position and encourage the reader to take the next step.
-    """
-
-    user_message = f"""
-    Based on the following resume and cover letter, write a short follow-up paragraph to be added to my application. Ensure it sounds like it's written by me.
-
-    Resume:
-    {full_resume}
-
-    Cover Letter:
-    {cover_letter}
-    """
-
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": user_message}
-        ]
-    )
-
-    follow_up = response.choices[0].message.content.strip()
-    return follow_up
-
 class PDF(FPDF):
     def header(self):
         # No header for resume
@@ -313,10 +168,6 @@ class PDF(FPDF):
             self.ln(2*h)
 
 def create_pdf(content, filename):
-    """
-    Creates a PDF file from the provided content.
-    Handles both resumes and cover letters with appropriate formatting.
-    """
     pdf = PDF(format='Letter')
     pdf.add_page()
     
@@ -378,7 +229,7 @@ def create_pdf(content, filename):
         effective_page_width = pdf.w - left_margin - right_margin
         
         # Split content into main sections
-        main_sections = re.split(r'\n\n(?=SUMMARY|COMPARISON|EDUCATION|RELEVANT WORK EXPERIENCE|ATS TIPS)', content)
+        main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
         
         # Process the header section (name, telephone, address, email)
         pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
@@ -414,50 +265,83 @@ def create_pdf(content, filename):
         # Process the rest of the sections
         pdf.set_font("DejaVu", '', 11)
         for i, section in enumerate(main_sections[1:], 1):
-            if section.startswith("COMPARISON"):
+            if section.startswith("SKILLS & EXPERIENCE"):
                 pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                # Extract each category
-                categories = re.findall(r'\*\*(.*?)\*\*\n((?:- .+\n?)+)', section)
-                for category, items in categories:
-                    pdf.set_font("DejaVu", 'B', 11)
-                    pdf.multi_cell(0, 5, f"{category}", ln=True)
-                    pdf.set_font("DejaVu", '', 11)
-                    for item in items.strip().split('\n'):
-                        pdf.multi_cell(0, 5, item, ln=True)
-                    pdf.ln(2)
-            elif section.startswith("EDUCATION"):
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                pdf.cell(0, 5, "EDUCATION", ln=True)
-                pdf.set_font("DejaVu", '', 11)
-                pdf.multi_cell(effective_page_width, 5, section.replace("EDUCATION:", "").strip(), align='J')
+                col_width = effective_page_width / 2
+                
+                # Extract company name and job requirements header
+                company_job_req = section.split('\n')[0].split('|')[1].strip()
+                
+                # Write both headers on the same line with personalization (swapped order)
+                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
                 pdf.ln(2)
-            elif section.startswith("RELEVANT WORK EXPERIENCE"):
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                pdf.cell(0, 5, "RELEVANT WORK EXPERIENCE", ln=True)
-                pdf.set_font("DejaVu", '', 11)
-                pdf.multi_cell(effective_page_width, 5, section.replace("RELEVANT WORK EXPERIENCE:", "").strip(), align='J')
-                pdf.ln(2)
-            elif section.startswith("ATS TIPS"):
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                pdf.cell(0, 5, "ATS TIPS", ln=True)
-                pdf.set_font("DejaVu", '', 11)
-                pdf.multi_cell(effective_page_width, 5, section.replace("ATS TIPS:", "").strip(), align='J')
-                pdf.ln(2)
+                
+                pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+                
+                lines = section.split('\n')[1:]  # Skip the header line
+                
+                max_y = pdf.get_y()
+                first_item = True
+                item_number = 1
+                for line in lines:
+                    if '|' in line:
+                        left, right = line.split('|')
+                        if first_item:
+                            first_item = False
+                            continue  # Skip the first item as it's redundant
+                        pdf.set_xy(left_margin, max_y)
+                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + right.strip(), align='L')  # Job Requirements (left column)
+                        new_y = pdf.get_y()
+                        
+                        pdf.set_xy(left_margin + col_width, max_y)
+                        pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + left.strip(), align='L')  # Matching Skills (right column)
+                        
+                        max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
+                        item_number += 1
+                    else:
+                        pdf.set_xy(left_margin, max_y)
+                        pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
+                        max_y = pdf.get_y() + 2
+                
+                pdf.set_y(max_y)
             else:
-                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for other section headers if any
-                section_header = section.split('\n')[0]
-                pdf.cell(0, 5, section_header, ln=True)
-                pdf.set_font("DejaVu", '', 11)
-                pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]).strip(), align='J')
-                pdf.ln(2)
+                pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
+                pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
+                pdf.set_font("DejaVu", '', 11)  # Reset to regular font
+                pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
             
             if i < len(main_sections) - 1:
                 pdf.ln(3)
                 pdf.line(left_margin, pdf.get_y(), pdf.w - right_margin, pdf.get_y())
                 pdf.ln(3)
 
-def generate_pdf(content, filename):
+
+    pdf.output(filename)
+     
+
+def generate_follow_up_paragraph(full_resume, cover_letter):
+    system_message = """
+    You are a creative writer tasked with crafting a concise, friendly follow-up paragraph that complements the provided resume and cover letter. The tone should be professional with a touch of wit, avoiding excessive sarcasm. If including a joke, it should be specifically catered to the HR department. The paragraph should express my continued interest in the position and encourage the reader to take the next step, such as scheduling an interview.
     """
-    Wrapper function to create a PDF.
+
+    user_message = f"""
+    Based on the following resume and cover letter, write a short follow-up paragraph that can be added to my application. Ensure it sounds like it's written by me.
+
+    Resume:
+    {full_resume}
+
+    Cover Letter:
+    {cover_letter}
     """
-    create_pdf(content, filename)
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    follow_up = response.choices[0].message.content.strip()
+    return follow_up
