@@ -8,7 +8,7 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write candidate's skill in a sentence to best match Job Requirements statement. Include the company name from the job description before "Job Requirements".
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write the candidate's skill in a sentence to best match the Job Requirements statement. Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
@@ -37,7 +37,7 @@ def analyze_resume_and_job(resume, job_description):
     Skill/Experience 2|Requirement 2
     Skill/Experience 3|Requirement 3
     Skill/Experience 4|Requirement 4
-    Skill/Experience 5|Requirement 5
+    Skill/Experience 5
 
     EDUCATION:
     [Summarized education information]
@@ -149,6 +149,32 @@ def generate_cover_letter(resume, job_description, cover_letter_info):
     formatted_cover_letter = f"{cover_letter_info['Full Name']}\n{cover_letter_info['Address']}\n{cover_letter_info['Phone']}\n{cover_letter_info['Email']}\n\n{today}\n\nDear {cover_letter_info['Company Name']} Hiring Team,\n\n{cover_letter_content}\n\nSincerely,\n{cover_letter_info['Full Name']}"
     
     return formatted_cover_letter
+
+def generate_follow_up_paragraph(resume, job_description):
+    system_message = """
+    You are a professional writing assistant tasked with generating a concise, upbeat, and witty follow-up paragraph for a resume-tailoring application. The paragraph should reflect the user's voice, maintaining a professional tone without resorting to forced humor or dad jokes unless genuinely funny. The paragraph should include relevant details based on the provided resume and job description.
+    """
+
+    user_message = f"""
+    Using the provided resume and job description, please generate a short follow-up paragraph that I can include in my application. The tone should be upbeat and witty, yet professional. Avoid forced dad jokes unless they're genuinely funny. Keep it concise, incorporating relevant details from my resume and the job description.
+
+    Resume:
+    {resume}
+
+    Job Description:
+    {job_description}
+    """
+
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message}
+        ]
+    )
+
+    follow_up_paragraph = response.choices[0].message.content.strip()
+    return follow_up_paragraph
 
 class PDF(FPDF):
     def header(self):
@@ -318,23 +344,20 @@ def create_pdf(content, filename):
 
 
     pdf.output(filename)
-     
 
-def generate_follow_up_paragraph(user_summary):
-    """
-    Generates a follow-up paragraph based on the user's summary.
-    """
+def generate_follow_up_paragraph(resume, job_description):
     system_message = """
-    You are an AI assistant helping [User's Name] enhance their resume application. Your task is to create a concise, upbeat, and witty follow-up paragraph that complements the existing summary. The tone should be professional yet personable, avoiding cheesy jokes unless they are genuinely funny. Ensure the paragraph includes relevant details that highlight the user's strengths and enthusiasm for the position.
+    You are a professional writing assistant tasked with generating a concise, upbeat, and witty follow-up paragraph for a resume-tailoring application. The paragraph should reflect the user's voice, maintaining a professional tone without resorting to forced humor or dad jokes unless genuinely funny. The paragraph should include relevant details based on the provided resume and job description.
     """
 
     user_message = f"""
-    Based on the following summary, please generate a follow-up paragraph:
+    Using the provided resume and job description, please generate a short follow-up paragraph that I can include in my application. The tone should be upbeat and witty, yet professional. Avoid forced dad jokes unless they're genuinely funny. Keep it concise, incorporating relevant details from my resume and the job description.
 
-    Summary:
-    {user_summary}
+    Resume:
+    {resume}
 
-    Follow the specified tone and style guidelines.
+    Job Description:
+    {job_description}
     """
 
     response = openai.ChatCompletion.create(
@@ -345,5 +368,5 @@ def generate_follow_up_paragraph(user_summary):
         ]
     )
 
-    follow_up = response.choices[0].message.content.strip()
-    return follow_up
+    follow_up_paragraph = response.choices[0].message.content.strip()
+    return follow_up_paragraph
