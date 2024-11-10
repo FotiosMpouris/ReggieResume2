@@ -5,21 +5,20 @@ from datetime import date
 
 def analyze_resume_and_job(resume, job_description):
     system_message = """
-    You are an expert resume analyst and career advisor helping me tailor my resume and application materials. Your task is to analyze my resume and the job description, then provide:
-    1. A tailored header with my name and key contact information.
-    2. A custom summary (3-4 sentences) highlighting my most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of my skills and the job requirements, listing at least 7 key points for each. Ensure my skills comparison is comparable to Job Requirements, and write my skills in sentences that best match Job Requirements statements. Include the company name from the job description before "Job Requirements".
-    4. Extract and summarize my education information.
-    5. Extract and summarize at least three of my relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
-    6. Extract my full name, address, email, and phone number for use in a cover letter.
+    You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
+    1. A tailored header for the resume, including the candidate's name and key contact information.
+    2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comprable to Jog Requirements, and write candidate's skill in a sentence to best match Job Requirements statement.Include the company name from the job description before "Job Requirements".
+    4. Extract and summarize the candidate's education information.
+    5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
+    6. Extract the full name, address, email, and phone number for use in a cover letter.
     7. Extract the company name from the job description for use in the cover letter greeting.
-    8. Generate a brief, upbeat follow-up paragraph that I can use after submitting my application. The tone should be professional but personable, and reference specific aspects of my background that align with the role. Avoid generic statements and clichés.
     """
 
     user_message = f"""
-    Please analyze my resume and the job description:
+    Please analyze the following resume and job description:
 
-    My Resume:
+    Resume:
     {resume}
 
     Job Description:
@@ -33,7 +32,7 @@ def analyze_resume_and_job(resume, job_description):
     [Custom summary here]
 
     COMPARISON:
-    [My Skills & Experience]|[Company Name Job Requirements]
+    [Your Skills & Experience]|[Company Name Job Requirements]
     Skill/Experience 1|Requirement 1
     Skill/Experience 2|Requirement 2
     Skill/Experience 3|Requirement 3
@@ -56,9 +55,6 @@ def analyze_resume_and_job(resume, job_description):
     Email: [Extracted email]
     Phone: [Extracted phone number]
     Company Name: [Extracted company name]
-
-    FOLLOW UP:
-    [Generate follow-up paragraph]
     """
 
     response = openai.ChatCompletion.create(
@@ -73,7 +69,7 @@ def analyze_resume_and_job(resume, job_description):
     return process_gpt_output(output)
 
 def process_gpt_output(output):
-    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:|FOLLOW UP:)', output)
+    sections = re.split(r'\n\n(?=HEADER:|SUMMARY:|COMPARISON:|EDUCATION:|RELEVANT WORK EXPERIENCE:|COVER LETTER INFO:)', output)
     
     header = re.sub(r'^HEADER:\s*', '', sections[0], flags=re.MULTILINE).strip()
     summary = re.sub(r'^SUMMARY:\s*', '', sections[1], flags=re.MULTILINE).strip()
@@ -88,10 +84,7 @@ def process_gpt_output(output):
     cover_letter_info_raw = re.sub(r'^COVER LETTER INFO:\s*', '', sections[5], flags=re.MULTILINE).strip().split('\n')
     cover_letter_info = {item.split(':')[0].strip(): item.split(':')[1].strip() for item in cover_letter_info_raw}
     
-    follow_up = re.sub(r'^FOLLOW UP:\s*', '', sections[6], flags=re.MULTILINE).strip()
-    
-    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info, follow_up
-
+    return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info
     
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
@@ -330,8 +323,3 @@ def create_pdf(content, filename):
 
 
     pdf.output(filename)
-     
-  
-
-
-
