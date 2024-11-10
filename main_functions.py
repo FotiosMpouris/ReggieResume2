@@ -37,7 +37,7 @@ def analyze_resume_and_job(resume, job_description):
     Skill/Experience 2|Requirement 2
     Skill/Experience 3|Requirement 3
     Skill/Experience 4|Requirement 4
-    Skill/Experience 5|
+    Skill/Experience 5|Requirement 5
 
     EDUCATION:
     [Summarized education information]
@@ -320,19 +320,21 @@ def create_pdf(content, filename):
     pdf.output(filename)
      
 
-def generate_follow_up_paragraph(full_resume, cover_letter):
+def generate_follow_up_paragraph(user_summary):
+    """
+    Generates a follow-up paragraph based on the user's summary.
+    """
     system_message = """
-    You are a creative writer tasked with crafting a concise, upbeat, and witty follow-up paragraph that complements the provided resume and cover letter. The tone should remain professional, avoiding dad jokes unless they're genuinely funny. The paragraph should encourage the reader to take the next step, such as contacting the candidate for an interview.
+    You are an AI assistant helping [User's Name] enhance their resume application. Your task is to create a concise, upbeat, and witty follow-up paragraph that complements the existing summary. The tone should be professional yet personable, avoiding cheesy jokes unless they are genuinely funny. Ensure the paragraph includes relevant details that highlight the user's strengths and enthusiasm for the position.
     """
 
     user_message = f"""
-    Based on the following resume and cover letter, write a short follow-up paragraph that can be added to the application. Ensure it sounds like it's written by me.
+    Based on the following summary, please generate a follow-up paragraph:
 
-    Resume:
-    {full_resume}
+    Summary:
+    {user_summary}
 
-    Cover Letter:
-    {cover_letter}
+    Follow the specified tone and style guidelines.
     """
 
     response = openai.ChatCompletion.create(
