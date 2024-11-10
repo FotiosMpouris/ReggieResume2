@@ -1,7 +1,7 @@
 import streamlit as st
 import openai
 from PIL import Image
-from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf, generate_follow_up_paragraph
+from main_functions import analyze_resume_and_job, generate_full_resume, generate_cover_letter, create_pdf
 
 # Set up OpenAI API key
 openai.api_key = st.secrets["openai_api_key"]
@@ -11,11 +11,8 @@ st.set_page_config(page_title="AI Resume Tailor", page_icon="📄", layout="wide
 # Load and display the logo alongside the title
 col1, col2 = st.columns([1, 12])
 with col1:
-    try:
-        logo = Image.open("assets/logo.png")  # Ensure correct path
-        st.image(logo, width=100)
-    except FileNotFoundError:
-        st.warning("Logo image not found in the assets folder.")
+    logo = Image.open("logo.png")
+    st.image(logo, width=100)
 with col2:
     st.title("AI Resume Tailor")
 
@@ -30,9 +27,9 @@ def sanitize_for_pdf(text):
 
 col1, col2 = st.columns(2)
 with col1:
-    resume = st.text_area("Paste your resume here", height=300, key="resume")
+    resume = st.text_area("Paste your resume here", height=300)
 with col2:
-    job_description = st.text_area("Paste the job description here", height=300, key="job_description")
+    job_description = st.text_area("Paste the job description here", height=300)
 
 def generate_resume():
     if resume and job_description:
@@ -42,7 +39,6 @@ def generate_resume():
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
-                follow_up = generate_follow_up_paragraph(resume, job_description)
                 
                 st.session_state.resume_data = {
                     'header': header,
@@ -51,8 +47,7 @@ def generate_resume():
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter,
-                    'follow_up': follow_up
+                    'cover_letter': cover_letter
                 }
                 st.session_state.generated = True
         except Exception as e:
@@ -95,16 +90,12 @@ if st.session_state.generated:
     
     st.subheader("Cover Letter")
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
-    
-    st.subheader("Follow-Up Paragraph")
-    st.text_area("Copy your follow-up paragraph:", data['follow_up'], height=150)
-    
+
     # Generate PDF downloads
     try:
-        # Create PDFs and save temporarily
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
         create_pdf(sanitize_for_pdf(data['cover_letter']), "cover_letter.pdf")
-        
+
         col1, col2 = st.columns(2)
         with col1:
             with open("tailored_resume.pdf", "rb") as pdf_file:
@@ -112,7 +103,7 @@ if st.session_state.generated:
             st.download_button(label="Download Resume as PDF",
                                data=PDFbyte,
                                file_name="tailored_resume.pdf",
-                               mime='application/pdf')
+                               mime='application/octet-stream')
         
         with col2:
             with open("cover_letter.pdf", "rb") as pdf_file:
@@ -120,16 +111,9 @@ if st.session_state.generated:
             st.download_button(label="Download Cover Letter as PDF",
                                data=PDFbyte,
                                file_name="cover_letter.pdf",
-                               mime='application/pdf')
-        
-        # Optionally, provide download for follow-up paragraph as text file
-        follow_up_bytes = data['follow_up'].encode('utf-8')
-        st.download_button(label="Download Follow-Up Paragraph",
-                           data=follow_up_bytes,
-                           file_name="follow_up_paragraph.txt",
-                           mime='text/plain')
+                               mime='application/octet-stream')
     except Exception as e:
-        st.error(f"An error occurred while creating downloads: {str(e)}")
+        st.error(f"An error occurred while creating PDFs: {str(e)}")
 
 if st.button("Start Over"):
     for key in list(st.session_state.keys()):
@@ -138,3 +122,6 @@ if st.button("Start Over"):
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
+
+
+
