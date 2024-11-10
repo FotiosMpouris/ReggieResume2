@@ -322,7 +322,7 @@ def create_pdf(content, filename):
 
 def generate_follow_up_paragraph(full_resume, cover_letter):
     system_message = """
-    You are a creative writer tasked with crafting a concise, friendly follow-up paragraph that complements the provided resume and cover letter. The tone should be professional with a touch of wit, avoiding excessive sarcasm. The paragraph should express my interest in the position and encourage the reader to take the next step, such as contacting me for an interview. If you include a joke, it should be relevant to the HR department.
+    You are a creative writer tasked with crafting a concise, upbeat, and witty follow-up paragraph that complements the provided resume and cover letter. The tone should remain professional, avoiding dad jokes unless they're genuinely funny. The paragraph should encourage the reader to take the next step, such as contacting the candidate for an interview.
     """
 
     user_message = f"""
