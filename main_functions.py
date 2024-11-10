@@ -92,7 +92,6 @@ def process_gpt_output(output):
     
     return header, summary, (your_skills, job_requirements), education, work_experience, cover_letter_info, follow_up
 
-[rest of the existing functions remain unchanged]
     
 def generate_full_resume(header, summary, skills_comparison, education, work_experience, company_name):
     skills, requirements = skills_comparison
