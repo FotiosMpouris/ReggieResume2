@@ -35,7 +35,7 @@ def generate_resume():
     if resume and job_description:
         try:
             with st.spinner("Analyzing and tailoring your resume..."):
-                header, summary, comparison, education, work_experience, cover_letter_info = analyze_resume_and_job(resume, job_description)
+                header, summary, comparison, education, work_experience, cover_letter_info, follow_up = analyze_resume_and_job(resume, job_description)
                 company_name = cover_letter_info['Company Name']
                 full_resume = generate_full_resume(header, summary, comparison, education, work_experience, company_name)
                 cover_letter = generate_cover_letter(resume, job_description, cover_letter_info)
@@ -47,7 +47,8 @@ def generate_resume():
                     'education': education,
                     'work_experience': work_experience,
                     'full_resume': full_resume,
-                    'cover_letter': cover_letter
+                    'cover_letter': cover_letter,
+                    'follow_up': follow_up
                 }
                 st.session_state.generated = True
         except Exception as e:
@@ -91,6 +92,10 @@ if st.session_state.generated:
     st.subheader("Cover Letter")
     st.text_area("Copy your cover letter:", data['cover_letter'], height=300)
 
+    st.subheader("Application Follow-up Message")
+    st.success(data['follow_up'])
+    st.info("Use this message as a template for your follow-up communication after submitting your application.")
+
     # Generate PDF downloads
     try:
         create_pdf(sanitize_for_pdf(data['full_resume']), "tailored_resume.pdf")
@@ -122,6 +127,3 @@ if st.button("Start Over"):
 
 st.markdown("---")
 st.markdown("Built with ❤️ using Streamlit and OpenAI GPT-4")
-
-
-
