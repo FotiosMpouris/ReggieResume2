@@ -5,7 +5,7 @@ from main_functions import analyze_resume_and_job, generate_full_resume, generat
 import os
 
 # Set up OpenAI API key before importing main_functions.py
-openai.api_key = st.secrets.get("openai_api_key")
+openai.api_key = st.secrets.get("OPENAI_API_KEY")
 
 # Verify API key is set
 if not openai.api_key:
