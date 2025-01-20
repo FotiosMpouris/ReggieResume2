@@ -8,11 +8,11 @@ def analyze_resume_and_job(resume, job_description):
     You are an expert resume analyst and career advisor with decades of experience in HR and recruitment across various industries. Your task is to analyze the provided resume and job description, then provide:
     1. A tailored header for the resume, including the candidate's name and key contact information.
     2. A custom summary (3-4 sentences) that highlights the candidate's most relevant skills and experiences for this specific job.
-    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comparable to Job Requirements, and write candidate's skill in a sentence to best match Job Requirements statement. Include the company name from the job description before "Job Requirements".
+    3. A detailed two-column comparison of the candidate's skills and the job requirements, listing at least 7 key points for each. Ensure candidate's skills comparison is comprable to Jog Requirements, and write candidate's skill in a sentence to best match Job Requirements statement.Include the company name from the job description before "Job Requirements".
     4. Extract and summarize the candidate's education information.
     5. Extract and summarize at least three relevant work experiences for this job, focusing on the most recent or most applicable positions. Each experience should be described in detail.
     6. Extract the full name, address, email, and phone number for use in a cover letter.
-    7. Ensure all summaries and descriptions are written in the first person, using "I" statements throughout.
+    7. Extract the company name from the job description for use in the cover letter greeting.
     """
 
     user_message = f"""
@@ -200,6 +200,11 @@ def create_pdf(content, filename):
             pdf.cell(0, 5, line.strip(), ln=True, align='L')
         pdf.ln(5)
         
+        # contact_info = paragraphs[0].split('\n')
+        # for line in contact_info:
+        #     pdf.cell(0, 5, line.strip(), ln=True)
+        # pdf.ln(5)
+        
         # Process date and salutation
         if len(paragraphs) > 1:
             date_salutation = paragraphs[1].split('\n')
@@ -225,12 +230,11 @@ def create_pdf(content, filename):
         
         pdf.set_auto_page_break(auto=True, margin=15)  # Bottom margin
         
+        # Calculate effective page width (accounting for margins)
+        effective_page_width = pdf.w - left_margin - right_margin
+        
         # Split content into main sections
         main_sections = re.split(r'\n\n(?=SUMMARY|SKILLS & EXPERIENCE|EDUCATION|RELEVANT WORK EXPERIENCE)', content)
-        
-        if not main_sections:
-            print("No content to add to the PDF.")
-            return
         
         # Process the header section (name, telephone, address, email)
         pdf.set_font("DejaVu", 'B', 12)  # Set to bold, slightly larger than body text
@@ -242,10 +246,10 @@ def create_pdf(content, filename):
         
         # Center the header between left and right margins
         header_width = pdf.get_string_width(header_info)
-        if header_width > (pdf.w - left_margin - right_margin):
+        if header_width > effective_page_width:
             # If header is too wide, reduce font size
             font_size = 12
-            while header_width > (pdf.w - left_margin - right_margin) and font_size > 9:
+            while header_width > effective_page_width and font_size > 9:
                 font_size -= 0.5
                 pdf.set_font("DejaVu", 'B', font_size)  # Keep bold
                 header_width = pdf.get_string_width(header_info)
@@ -268,14 +272,14 @@ def create_pdf(content, filename):
         for i, section in enumerate(main_sections[1:], 1):
             if section.startswith("SKILLS & EXPERIENCE"):
                 pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                col_width = (pdf.w - left_margin - right_margin) / 2
+                col_width = effective_page_width / 2
                 
                 # Extract company name and job requirements header
                 company_job_req = section.split('\n')[0].split('|')[1].strip()
                 
                 # Write both headers on the same line with personalization (swapped order)
-                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0)
-                pdf.cell(col_width, 5, company_job_req, align='L', border=0, ln=True)
+                pdf.cell(col_width, 5, company_job_req, align='L', border=0)
+                pdf.cell(col_width, 5, f"{first_name}'s Matching Skills", align='L', border=0, ln=True)
                 pdf.ln(2)
                 
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
@@ -283,33 +287,34 @@ def create_pdf(content, filename):
                 lines = section.split('\n')[1:]  # Skip the header line
                 
                 max_y = pdf.get_y()
+                first_item = True
                 item_number = 1
                 for line in lines:
                     if '|' in line:
                         left, right = line.split('|')
-                        if 'Skill/Experience' in left or 'Requirement' in right:
-                            continue  # Skip headers
+                        if first_item:
+                            first_item = False
+                            continue  # Skip the first item as it's redundant
                         pdf.set_xy(left_margin, max_y)
                         pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + right.strip(), align='L')  # Job Requirements (left column)
+                        new_y = pdf.get_y()
                         
                         pdf.set_xy(left_margin + col_width, max_y)
                         pdf.multi_cell(col_width - 2, 5, f"{item_number}. " + left.strip(), align='L')  # Matching Skills (right column)
                         
-                        max_y = max(pdf.get_y(), max_y) + 2  # Add some space between items
+                        max_y = max(new_y, pdf.get_y()) + 2  # Add some space between items
                         item_number += 1
                     else:
                         pdf.set_xy(left_margin, max_y)
-                        pdf.multi_cell(col_width - 2, 5, line, align='L')
+                        pdf.multi_cell(effective_page_width - 2, 5, line, align='L')
                         max_y = pdf.get_y() + 2
                 
                 pdf.set_y(max_y)
             else:
                 pdf.set_font("DejaVu", 'B', 11)  # Set to bold for section headers
-                section_header = section.split('\n')[0]
-                pdf.cell(0, 5, section_header, ln=True)  # Write section header
+                pdf.cell(0, 5, section.split('\n')[0], ln=True)  # Write section header
                 pdf.set_font("DejaVu", '', 11)  # Reset to regular font
-                section_content = '\n'.join(section.split('\n')[1:])
-                pdf.multi_cell(0, 5, section_content, align='J')
+                pdf.multi_cell(effective_page_width, 5, '\n'.join(section.split('\n')[1:]), align='J')
             
             if i < len(main_sections) - 1:
                 pdf.ln(3)
@@ -317,55 +322,7 @@ def create_pdf(content, filename):
                 pdf.ln(3)
 
 
-    # Example usage:
-    if __name__ == "__main__":
-        # Sample resume and job description
-        sample_resume = """
-    John Doe
-    1234 Elm Street, Anytown, USA
-    johndoe@example.com | (123) 456-7890
+    pdf.output(filename)
 
-    PROFESSIONAL SUMMARY
-    I am an experienced software developer with expertise in Python, Java, and cloud technologies. I have a proven track record of delivering high-quality software solutions on time and within budget.
 
-    EDUCATION
-    B.Sc. in Computer Science, University of Somewhere, 2015 - 2019
 
-    RELEVANT WORK EXPERIENCE
-    Software Developer at TechCorp (2019 - Present)
-    - I developed and maintained web applications using Python and Django.
-    - I collaborated with cross-functional teams to define project requirements.
-    - I implemented CI/CD pipelines to streamline deployment processes.
-
-    Junior Developer at WebSolutions (2017 - 2019)
-    - I assisted in the development of client websites using JavaScript and React.
-    - I participated in code reviews and provided constructive feedback.
-    - I managed database operations and ensured data integrity.
-    """
-
-        sample_job_description = """
-    We are seeking a skilled Software Developer with experience in Python and cloud platforms. The ideal candidate will have a strong background in web application development, familiarity with CI/CD practices, and the ability to work collaboratively in a fast-paced environment.
-
-    Responsibilities:
-    - Develop and maintain web applications using Python frameworks.
-    - Implement and manage CI/CD pipelines.
-    - Collaborate with design and product teams to deliver high-quality software.
-    """
-
-        analysis = analyze_resume_and_job(sample_resume, sample_job_description)
-        if analysis:
-            header, summary, skills_comparison, education, work_experience, cover_letter_info = analysis
-
-            # Generate Resume
-            full_resume = generate_full_resume(header, summary, skills_comparison, education, work_experience, cover_letter_info.get('Company Name', 'Company'))
-
-            # Generate Cover Letter
-            cover_letter = generate_cover_letter(full_resume, sample_job_description, cover_letter_info)
-
-            # Create Resume PDF
-            create_pdf(full_resume, "resume.pdf")
-            print("Resume PDF generated successfully.")
-
-            # Create Cover Letter PDF
-            create_pdf(cover_letter, "cover_letter.pdf")
-            print("Cover Letter PDF generated successfully.")
